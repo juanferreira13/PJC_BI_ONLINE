@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Acesso — BI PJC</title>
+  <style>
+    :root{--bg:#081019;--surface:#101e2c;--surface2:#172a3d;--border:rgba(255,255,255,.10);--gold:#c9a24b;--gold2:#e0bd6a;--ink:#fff;--muted:#8594a3;--danger:#ff8585}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+    body{min-height:100vh;display:grid;place-items:center;padding:24px;overflow:hidden}
+    body:before{content:"";position:fixed;inset:-30%;background:radial-gradient(circle at 72% 20%,rgba(201,162,75,.10),transparent 25%),radial-gradient(circle at 25% 80%,rgba(45,105,160,.12),transparent 28%);pointer-events:none}
+    .shell{width:min(430px,100%);position:relative}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px;justify-content:center}.mark{width:38px;height:38px;border:1px solid rgba(201,162,75,.45);border-radius:11px;display:grid;place-items:center;color:var(--gold2);font:700 24px Georgia,serif;background:#0c1927}.brand b{font-size:15px;letter-spacing:.04em}.brand span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+    .card{background:linear-gradient(180deg,rgba(17,31,45,.98),rgba(12,24,36,.98));border:1px solid var(--border);border-radius:18px;padding:30px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+    h1{font-size:22px;margin:0 0 7px;letter-spacing:-.02em}.sub{margin:0 0 25px;color:var(--muted);font-size:13px;line-height:1.55}
+    label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#9aa8b6;font-weight:700;margin:0 0 7px}.field{margin-bottom:16px;position:relative}
+    input{width:100%;border:1px solid var(--border);background:var(--surface2);color:var(--ink);border-radius:10px;padding:12px 13px;font-size:14px;outline:none;transition:.15s}input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,75,.09)}
+    button{width:100%;border:0;border-radius:10px;padding:12px 15px;background:linear-gradient(180deg,#d8b45f,#b98f3d);color:#081019;font-weight:800;font-size:13px;cursor:pointer;margin-top:5px;box-shadow:0 8px 22px rgba(201,162,75,.16)}button:disabled{opacity:.6;cursor:wait}
+    .erro{min-height:20px;margin:12px 0 0;text-align:center;color:var(--danger);font-size:12px}.footer{text-align:center;color:#5f6e7c;font-size:10.5px;margin-top:16px}.lock{display:inline-flex;align-items:center;gap:5px}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="brand"><div class="mark">$</div><div><b>PJC CONSULTORIA</b><span>Business Intelligence</span></div></div>
+    <section class="card">
+      <h1>Acesso ao painel</h1>
+      <p class="sub">Entre com a conta autorizada para visualizar os dados do BI de Operações.</p>
+      <form id="form">
+        <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" required placeholder="seuemail@pjcconsultoria.com.br"></div>
+        <div class="field"><label for="password">Senha</label><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+        <button id="btn" type="submit">ENTRAR</button>
+        <div id="erro" class="erro" role="alert"></div>
+      </form>
+    </section>
+    <div class="footer"><span class="lock">🔒 Sessão protegida · acesso restrito</span></div>
+  </main>
+<script>
+const form=document.getElementById('form'),btn=document.getElementById('btn'),erro=document.getElementById('erro');
+form.addEventListener('submit',async e=>{e.preventDefault();erro.textContent='';btn.disabled=true;btn.textContent='ENTRANDO…';try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:form.email.value,password:form.password.value})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'Não foi possível entrar.');location.replace('/app');}catch(x){erro.textContent=x.message;}finally{btn.disabled=false;btn.textContent='ENTRAR';}});
+</script>
+</body>
+</html>

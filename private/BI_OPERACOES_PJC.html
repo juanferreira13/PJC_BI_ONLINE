@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- O painel e reaberto sempre pelo mesmo caminho de arquivo. Sem isto, o
+     navegador reexibe a versao guardada e as melhorias parecem nao ter sido
+     aplicadas. -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BI de Operações — PJC</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='1' y='1' width='30' height='30' rx='7.5' fill='%230c1927'/><path d='M6.5 22 L13.5 15 L17.5 18 L25.5 9.5' fill='none' stroke='%23c9a24b' stroke-opacity='.45' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/><path d='M22 9 L25.8 9.3 L25.3 13' fill='none' stroke='%23c9a24b' stroke-opacity='.45' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/><text x='16' y='24' font-family='Georgia,serif' font-size='21' font-weight='700' text-anchor='middle' fill='%23e0bd6a'>$</text></svg>">
+<style>
+:root{
+  --bg:#0a1017; --surface:#111e2b; --surface-2:#16283a; --surface-3:#1b3149;
+  --gold:#c9a24b; --gold-dim:#8a6f34;
+  --ink:#ffffff; --ink-2:#b8c4d0; --muted:#7d8b99;
+  --grid:#1e2f42; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#008300; --s3:#d55181; --s4:#c98500;
+  --s5:#199e70; --s6:#d95926; --s7:#9085e9; --s8:#e66767;
+  --f1:#cde2fb; --f2:#9ec5f4; --f3:#6da7ec; --f4:#3987e5; --f5:#256abf;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+a{color:var(--s1)}
+
+/* ---------- cabecalho ---------- */
+header{position:relative;overflow:hidden;background:linear-gradient(160deg,#0d1a26,#0a1017 70%);border-bottom:1px solid var(--border)}
+header .plexus{position:absolute;inset:0;opacity:.30;pointer-events:none}
+header .wrap{position:relative;max-width:1520px;margin:0 auto;padding:22px 28px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+/* Marca oficial do Grupo PJC, embutida em base64 de proposito: o painel roda
+   por file:// e precisa continuar sendo um arquivo unico, sem imagem ao lado. */
+.wordmark{display:flex;align-items:center;flex:none}
+.wordmark img{display:block;height:52px;width:auto}
+.titulo{flex:1;min-width:220px}
+.titulo h1{font-size:18px}
+.titulo p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.carimbo{flex:none;text-align:right;font-size:11px;color:var(--muted);line-height:1.7}
+.carimbo b{color:var(--ink-2);font-weight:600}
+.btn-atualizar{display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;
+  background:linear-gradient(180deg,#d3ad57,#b98f3d);color:#0a1017;border:0;border-radius:8px;
+  padding:9px 15px;font:700 12.5px var(--sans);cursor:pointer;box-shadow:0 2px 10px rgba(201,162,75,.28);
+  transition:filter .15s,transform .05s}
+.btn-atualizar:hover{filter:brightness(1.07)}
+.btn-atualizar:active{transform:translateY(1px)}
+.btn-atualizar svg{display:block}
+/* Volta para a capa. Fica ao lado do "Atualizar dados" de proposito: os dois
+   sao acoes do painel, nao conteudo, e sozinho no canto oposto o link some. */
+.btn-menu{display:inline-flex;align-items:center;gap:7px;margin:0 8px 8px 0;
+  background:transparent;color:var(--gold);border:1px solid var(--gold-dim);border-radius:8px;
+  padding:8px 13px;font:600 12.5px var(--sans);cursor:pointer;text-decoration:none;
+  transition:background .15s,border-color .15s,transform .05s}
+.btn-menu:hover{background:rgba(201,162,75,.12);border-color:var(--gold)}
+.btn-menu:active{transform:translateY(1px)}
+.btn-menu svg{display:block}
+.btn-atualizar.girando svg{animation:girar 1s linear infinite}
+.btn-atualizar:disabled{opacity:.6;cursor:default}
+@keyframes girar{to{transform:rotate(360deg)}}
+
+/* ---------- modal de atualizacao ---------- */
+.modal-atu{position:fixed;inset:0;z-index:120;display:grid;place-items:center;
+  background:rgba(5,10,15,.74);backdrop-filter:blur(3px)}
+.cartao-atu{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:min(540px,92vw);padding:26px 28px 22px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.cartao-atu h2{font-size:17px;display:flex;align-items:center;gap:11px;margin-bottom:4px}
+.cartao-atu .sub-atu{font-size:12.5px;color:var(--muted);margin:0 0 20px}
+.etapas-atu{display:flex;gap:10px;margin-bottom:18px}
+.etapa-atu{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:11px 13px;display:flex;align-items:center;gap:10px}
+.etapa-atu .bola{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;background:var(--surface-3);color:var(--muted);border:1px solid var(--border)}
+.etapa-atu .rot-atu{font-size:12px;font-weight:600;color:var(--ink-2);line-height:1.3}
+.etapa-atu[data-e="ativa"]{border-color:var(--gold)}
+.etapa-atu[data-e="ativa"] .bola{background:var(--gold);color:#0a1017;border-color:var(--gold);
+  animation:pulsar 1.2s ease-in-out infinite}
+.etapa-atu[data-e="ativa"] .rot-atu{color:var(--ink)}
+.etapa-atu[data-e="feita"] .bola{background:var(--good);color:#0a1017;border-color:var(--good)}
+.etapa-atu[data-e="feita"] .rot-atu{color:var(--ink)}
+@keyframes pulsar{0%,100%{box-shadow:0 0 0 0 rgba(201,162,75,.5)}50%{box-shadow:0 0 0 6px rgba(201,162,75,0)}}
+
+.pct-atu{font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1;text-align:center;margin:6px 0 12px}
+.barra-atu{height:14px;background:var(--surface-2);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.preench-atu{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#b98f3d,#e0c070);
+  transition:width .4s cubic-bezier(.4,0,.2,1)}
+.preench-atu.erro{background:linear-gradient(90deg,#b13636,#d03b3b)}
+.preench-atu.ok{background:linear-gradient(90deg,#0a8a0a,#0ca30c)}
+.msg-atu{font-size:13px;color:var(--ink-2);text-align:center;margin:14px 0 4px;min-height:20px}
+.msg-atu.erro{color:var(--critical);font-weight:600}
+.log-atu{max-height:132px;overflow-y:auto;background:#050a0f;border:1px solid var(--border);border-radius:8px;
+  padding:9px 12px;margin-top:12px;font:11.5px/1.7 ui-monospace,"Cascadia Code",Consolas,monospace;color:var(--muted)}
+.log-atu div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-atu div:last-child{color:var(--ink-2)}
+.log-atu::-webkit-scrollbar{width:8px}
+.log-atu::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:5px}
+.acoes-atu{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.acoes-atu button{background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);
+  border-radius:8px;padding:9px 18px;font:600 13px var(--sans);cursor:pointer}
+.acoes-atu button:hover{border-color:var(--gold);color:var(--gold)}
+.acoes-atu button.primario{background:var(--gold);color:#0a1017;border-color:var(--gold)}
+.aviso-atu{background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--warning);
+  border-radius:8px;padding:13px 15px;font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-top:4px}
+.aviso-atu code{background:#050a0f;padding:2px 7px;border-radius:5px;color:var(--gold);font-size:12px}
+
+/* ---------- abas ---------- */
+nav.abas{position:sticky;top:0;z-index:40;background:rgba(10,16,23,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+nav.abas .wrap{max-width:1520px;margin:0 auto;padding:0 28px;display:flex;gap:2px;overflow-x:auto}
+nav.abas button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);
+  font:600 13px var(--sans);padding:13px 15px;cursor:pointer;white-space:nowrap;transition:color .15s}
+nav.abas button:hover{color:var(--ink-2)}
+nav.abas button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+nav.abas button .pino{display:inline-block;margin-left:6px;background:var(--warning);color:#111e2b;
+  font-size:10px;font-weight:700;border-radius:9px;padding:1px 6px;vertical-align:1px}
+
+main{max-width:1520px;margin:0 auto;padding:22px 28px 70px}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px}
+.campo{display:flex;flex-direction:column;gap:5px;min-width:140px}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.campo select,.campo input{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);
+  border-radius:7px;padding:7px 10px;font:14px var(--sans);min-width:140px}
+.campo select:focus,.campo input:focus{outline:2px solid var(--gold);outline-offset:-1px}
+.chk{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:7px;padding:8px 12px;cursor:pointer;user-select:none;font-size:13px}
+.chk input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer}
+
+/* ---------- filtro de multipla escolha ---------- */
+.multi{position:relative}
+.multi-btn{width:100%;min-width:190px;display:flex;align-items:center;gap:8px;
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:7px;
+  padding:7px 10px;font:14px var(--sans);cursor:pointer;text-align:left}
+.multi-btn:hover{border-color:var(--gold-dim)}
+.multi-btn .txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi-btn .txt.todos{color:var(--muted)}
+.multi-btn .cha{background:var(--gold);color:#0a1017;font-size:11px;font-weight:700;
+  border-radius:9px;padding:1px 7px;flex:none}
+.multi-btn .cae{color:var(--muted);font-size:10px;flex:none;transition:transform .15s}
+.multi[data-aberto="1"] .multi-btn{border-color:var(--gold)}
+.multi[data-aberto="1"] .cae{transform:rotate(180deg)}
+
+.multi-pop{position:absolute;z-index:60;top:calc(100% + 5px);left:0;min-width:260px;max-width:340px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 14px 40px rgba(0,0,0,.6);overflow:hidden}
+.multi-pop .topo{padding:9px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.multi-pop .topo input{width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--border);
+  border-radius:6px;padding:6px 9px;font:13px var(--sans)}
+.multi-pop .acoes{display:flex;gap:7px}
+.multi-pop .acoes button{flex:1;background:none;border:1px solid var(--border);color:var(--ink-2);
+  border-radius:6px;padding:5px 8px;font:600 11.5px var(--sans);cursor:pointer}
+.multi-pop .acoes button:hover{border-color:var(--gold);color:var(--gold)}
+.multi-lista{max-height:264px;overflow-y:auto;padding:5px}
+.multi-lista label{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:6px;
+  cursor:pointer;font-size:13px;user-select:none}
+.multi-lista label:hover{background:var(--surface-3)}
+.multi-lista input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;flex:none}
+.multi-lista .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi-lista .cnt{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;flex:none}
+.multi-lista .nada{color:var(--muted);font-size:12.5px;padding:14px 9px;text-align:center}
+.multi-lista::-webkit-scrollbar{width:9px}
+.multi-lista::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:5px}
+
+.fichas{display:flex;gap:7px;flex-wrap:wrap;width:100%;margin-top:2px}
+.ficha{display:inline-flex;align-items:center;gap:6px;background:var(--surface-3);
+  border:1px solid var(--border);border-radius:14px;padding:3px 5px 3px 11px;font-size:11.5px;color:var(--ink-2)}
+.ficha b{color:var(--ink);font-weight:600}
+.ficha button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;
+  line-height:1;padding:0 4px;border-radius:50%}
+.ficha button:hover{color:var(--critical)}
+.btn-limpar{background:none;border:1px solid var(--border);color:var(--ink-2);border-radius:7px;
+  padding:8px 14px;font:600 13px var(--sans);cursor:pointer}
+.btn-limpar:hover{border-color:var(--gold);color:var(--gold)}
+.contagem{margin-left:auto;font-size:12px;color:var(--muted);padding-bottom:9px}
+.contagem b{color:var(--ink);font-size:15px}
+
+/* ---------- cartoes ---------- */
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.kpi .rot{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.kpi .val{font-size:29px;font-weight:600;letter-spacing:-.02em;margin:7px 0 2px;line-height:1.1;
+  white-space:nowrap}
+/* Valor por extenso fica longo (R$ 710.458.600). Em vez de deixar quebrar em
+   duas linhas e desalinhar os cartoes, a fonte encolhe conforme o numero cresce. */
+.kpi .val.medio{font-size:25px}
+.kpi .val.longo{font-size:21px}
+.kpi .pe{font-size:11.5px;color:var(--muted)}
+.kpi.alerta::before{background:var(--warning)}
+.kpi .val.vazio{color:var(--muted);font-size:19px;font-weight:500}
+
+.painel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px 20px}
+.painel > h2{font-size:14.5px;margin-bottom:3px}
+.painel > .desc{font-size:12px;color:var(--muted);margin:0 0 16px}
+.duas{grid-template-columns:repeat(auto-fit,minmax(430px,1fr))}
+
+/* ---------- graficos ---------- */
+.barras{display:flex;flex-direction:column;gap:9px}
+.linha-b{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:12px;align-items:center}
+.linha-b .rot{font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trilha{background:var(--surface-2);border-radius:4px;height:26px;position:relative;overflow:hidden}
+.barra{height:100%;border-radius:0 4px 4px 0;transition:width .35s cubic-bezier(.4,0,.2,1);min-width:2px}
+.linha-b .num{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;min-width:96px;font-weight:500}
+.linha-b .num small{display:block;color:var(--muted);font-size:10.5px;font-weight:400}
+.linha-b:hover .rot{color:var(--ink)}
+
+.legenda{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:13px;border-top:1px solid var(--border)}
+.legenda span{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2)}
+.legenda i{width:11px;height:11px;border-radius:3px;flex:none}
+
+/* funil */
+.funil{display:flex;flex-direction:column;gap:5px}
+.etapa{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+  background:var(--surface-2);border-radius:8px;padding:11px 15px;position:relative;overflow:hidden}
+.etapa .fundo{position:absolute;inset:0;opacity:.30;transition:width .35s}
+.etapa .esq,.etapa .dir{position:relative}
+.etapa .nome{font-size:13px;font-weight:600}
+.etapa .qtd{font-size:11.5px;color:var(--ink-2);margin-top:1px}
+.etapa .dir{text-align:right;font-variant-numeric:tabular-nums}
+.etapa .dir .v{font-size:16px;font-weight:600}
+.etapa .dir .p{font-size:11px;color:var(--muted)}
+.seta{text-align:center;color:var(--muted);font-size:11px;padding:1px 0}
+.seta b{color:var(--ink-2)}
+
+.desfechos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.desfecho{border-radius:10px;padding:14px 16px;border:1px solid var(--border);background:var(--surface-2)}
+.desfecho .cab{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.desfecho .ico{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
+  font-size:12px;font-weight:700;color:#0a1017;flex:none}
+.desfecho .v{font-size:24px;font-weight:600;margin-top:9px;letter-spacing:-.02em}
+.desfecho .p{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ---------- tabelas ---------- */
+.rolagem{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+/* Cabecalho fixo na tabela de operacoes.
+   Sem caixa de rolagem propria de proposito: com overflow no container, o
+   sticky passa a valer dentro dele, e quem rola a PAGINA (o caso comum, com o
+   mouse fora da tabela) via o cabecalho subir junto. Deixando a rolagem ser a
+   da janela, as duas linhas grudam no topo da tela. */
+.rolagem.fixa{overflow:visible}
+.rolagem.fixa thead th{position:sticky;z-index:2}
+.rolagem.fixa tr.subtotais th{z-index:3;background:var(--surface-3);
+  color:var(--ink);font-size:11px;text-transform:none;letter-spacing:0;
+  border-bottom:1px solid var(--border);cursor:default}
+.rolagem.fixa tr.subtotais th:hover{color:var(--ink)}
+/* os dois "top" sao calculados em ajustarCabecalho(): dependem da altura da
+   barra de abas, que e sticky por cima da tabela */
+tr.subtotais .rot{color:var(--muted);font-weight:600;text-transform:uppercase;
+  font-size:10px;letter-spacing:.07em}
+tr.subtotais .val{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{background:var(--surface-2);color:var(--ink-2);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.07em;font-weight:600;text-align:left;padding:11px 13px;position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--gold)}
+th.n,td.n{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:10px 13px;border-top:1px solid var(--border);vertical-align:top}
+tbody tr:hover{background:var(--surface-2)}
+td.forte{font-weight:600}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.vazio-cel{color:#5c6874}
+.sem-dado{font-size:11.5px;color:var(--warning);font-style:italic}
+.hist-mark{font-size:10px;color:var(--gold);border:1px solid var(--gold-dim);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+
+.paginacao{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:16px;font-size:12.5px;color:var(--muted)}
+.paginacao button{background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);
+  border-radius:7px;padding:6px 13px;font:600 12.5px var(--sans);cursor:pointer}
+.paginacao button:disabled{opacity:.35;cursor:default}
+.paginacao button:not(:disabled):hover{border-color:var(--gold);color:var(--gold)}
+
+/* ---------- notas ---------- */
+.nota{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warning);
+  border-radius:10px;padding:17px 20px;margin-bottom:14px}
+.nota.ok{border-left-color:var(--good)}
+.nota.info{border-left-color:var(--s1)}
+.nota h3{font-size:13.5px;margin-bottom:7px;display:flex;align-items:center;gap:9px}
+.nota .selo{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  padding:2px 8px;border-radius:5px;background:var(--surface-3);color:var(--ink-2)}
+.nota p{margin:0 0 9px;color:var(--ink-2);font-size:13px;line-height:1.65}
+.nota p:last-child{margin-bottom:0}
+.nota code{background:var(--surface-2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--gold)}
+.nota ul{margin:0 0 9px;padding-left:20px;color:var(--ink-2);font-size:13px;line-height:1.7}
+.nota .tabelinha{margin:11px 0 4px;font-size:12.5px;width:auto}
+.nota .tabelinha td,.nota .tabelinha th{padding:6px 13px 6px 0;border:0}
+.nota .tabelinha th{background:none;position:static;padding-bottom:8px}
+
+.vazio-aviso{text-align:center;color:var(--muted);padding:46px 20px;font-size:13px}
+.oculto{display:none !important}
+
+/* tooltip */
+/* ---- gráfico mensal Receita x Meta ---- */
+.gmensal{margin-top:6px}
+.gmensal .ctrl{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0 0 14px}
+/* Largura folgada para nome e sobrenome caberem na mesma linha. */
+.gmensal .ctrl .campo{min-width:300px}
+.gmensal .multi-lista .opc{white-space:nowrap}
+/* joga os botoes de serie para a direita, longe da lista */
+.gmensal .series{display:flex;gap:7px;margin-left:auto}
+.gmensal .series button{background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
+  padding:8px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;font-family:inherit}
+.gmensal .series button[aria-pressed="true"]{color:var(--ink);border-color:var(--gold)}
+.gmensal .series button .amostra{width:20px;height:0;border-top-width:2.5px;border-top-style:solid;display:inline-block}
+.gmensal svg{display:block;width:100%;height:auto;overflow:visible}
+.gmensal .eixo{stroke:var(--border);stroke-width:1}
+.gmensal .grade{stroke:var(--border);stroke-width:1;stroke-dasharray:3 4;opacity:.55}
+.gmensal .rotEixo{fill:var(--muted);font-size:10.5px}
+.gmensal .ponto{cursor:pointer}
+.gmensal .legenda{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--muted)}
+.gmensal .legenda i{display:inline-block;width:22px;border-top-width:2.5px;border-top-style:solid;
+  vertical-align:middle;margin-right:6px}
+#dica{position:fixed;z-index:100;pointer-events:none;background:#050a0f;border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;font-size:12px;line-height:1.55;box-shadow:0 8px 26px rgba(0,0,0,.6);
+  max-width:290px;opacity:0;transition:opacity .12s}
+#dica b{color:var(--gold)}
+#dica .l{color:var(--muted)}
+
+@media (max-width:720px){
+  header .wrap,nav.abas .wrap,main{padding-left:16px;padding-right:16px}
+  .linha-b{grid-template-columns:minmax(88px,120px) 1fr auto}
+  .desfechos{grid-template-columns:1fr}
+  .carimbo{text-align:left}
+  .wordmark img{height:40px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="plexus" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 150" aria-hidden="true">
+    <g stroke="#2c4a68" stroke-width=".7" fill="none">
+      <path d="M0 96 L88 44 L176 104 L268 36 L356 118 L452 58 L540 126 L636 46 L724 108 L820 34 L912 96 L1006 44 L1100 116 L1200 60"/>
+      <path d="M0 32 L96 112 L188 52 L280 128 L372 44 L468 106 L560 38 L652 120 L748 56 L840 124 L936 42 L1030 108 L1124 50 L1200 118"/>
+      <path d="M88 44 L96 112 M176 104 L188 52 M268 36 L280 128 M356 118 L372 44 M452 58 L468 106 M540 126 L560 38 M636 46 L652 120 M724 108 L748 56 M820 34 L840 124 M912 96 L936 42 M1006 44 L1030 108 M1100 116 L1124 50"/>
+    </g>
+    <g fill="#c9a24b" opacity=".55">
+      <circle cx="88" cy="44" r="2.2"/><circle cx="268" cy="36" r="2.2"/><circle cx="452" cy="58" r="2.2"/>
+      <circle cx="636" cy="46" r="2.2"/><circle cx="820" cy="34" r="2.2"/><circle cx="1006" cy="44" r="2.2"/>
+    </g>
+    <g fill="#3987e5" opacity=".45">
+      <circle cx="176" cy="104" r="1.9"/><circle cx="356" cy="118" r="1.9"/><circle cx="540" cy="126" r="1.9"/>
+      <circle cx="724" cy="108" r="1.9"/><circle cx="912" cy="96" r="1.9"/><circle cx="1100" cy="116" r="1.9"/>
+    </g>
+  </svg>
+  <div class="wrap">
+    <div class="wordmark">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOMAAACECAYAAABif5yuAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAEGmSURBVHhe7Z13lBzHfecXGbsIRNg0u7MJu4tF3Mkz3dWzyIEAkQESABFJAAQBImeAAAlmAiRAAAQDmEBSokgqUMEKFCWZMiVZkmVl+XzW85PD2e/53d3z2b5g3cnv1b1v99RM9a+rJyy2exfk/vF9M91VnWbqU79f/Sp02Yi6xKAR9YnBI+riZf0qVolBdhWbpspDt/uakkO6pfrkUOU+Kpqn2Hw0zfxMDc+lp4bbRI9X5RH56L5CakiNuCE16mNHBFMVZkEYGUxVjKxPDqPCA5bXJYcPq02OGlKTHA8NDyQrsJ/mtSmYHG5K3ibnxTmH1qbGOpW8BUJ69jrifPS88rlJekVdcujwQGokPkcFk+X2c0jPm9mHvMNqU6Px444KpkaYeUyRa2f3pyqQr6IuNRz3PSyQGg3hPELlgVRFeV2qoqI+VY7zysd2W/WpcnHNITWpSnziOj12/qA20n/ptzi3qVTHyGlyHnpsD6pBH9PTGtVoVJswVtTFB5mA1MXLRtYlBo+sjw+GpRxSkxg3uDpRfUtDYnRTR3zW5Gmxze1TYquqmuNNQ2sSYwZVJ2orzPyJIVYNKmr4eBmOx35Zcm0rztnSEZ/f3BGfQ9UyKb6gri0exnUG1ySq6PlMS56R2KbXGteUqKmZkOjAp1nh0PuRzgHVtiamNk6Mp3Fvcn6aL3cOAJ8YjGs0T4rPw7HB9niyrj0RDbQlOnE+pFU1J5pQ26IiKw+gorDfR2HlKh5UUoOqkwHcY+uUxNIpnfFtrZMTS2pak5NReQ2uTlbjWrnj7McXVqq8oGRwadrHUfLzNqRGjmzQRlufqZHulRit4Gg6ydegj4GFtMNYnxhSEUgMAWjtU2Orty6P8Md3hvlzB0L81aMh/tLhEH/6vhDfszbCU8no0yi0w2oTI3EcdcNooRIgDq9NVNROSEw+uy3Mr+wLmecWupoRvl/aF+K7b4/w6eH4XlQKAnzzXHlgxHfk72Kx6zj/0rmxX2LbAWzmeJwXnwfWR/j5XSGOCkI8E70WPQfOq6diV57Za93vs/tD/PK+EL+8N8SxD7qwJ8TP3BXma26N/hMgAjTyOQoL/01yCCBsmJhgaxdH//WRHWH+4qEQf+1YJ792GNcJ8913RHg4Gj+G81vXKAVGRSG82SVXFtnv2ghHPpUcAEoqCjaaRtNFnsx3wFifGl5mFnLTtYsPLg8khqEgLp0X/dULh0L8jRMhfvquML9rRYSvXhj9h/W3Rf/96MYwf+lIiH/qZCfftjLCR9UnhgEwHJ8TLVCJIabVrUsMHh5IlAPGC7tD/MJ9Ib5leYTfvSLCt6+K8HtWR/iuNRETwsMbwvyFgyH+ytEQXzQ7+gNYSRXkKqEymdcV/erb93fyOxZH/8fAqkSQ5hESkN9/V5g/fzDEYZVhgURhdkKfK8QABDACihObw3zj0ghHBSa0ZVmE71gV4U/vDvHP3N/JD94Z4WMaE2PxG1jXF+eSv8vC/SWHwuLNTsc+d2mv9bs/dk/I/O2Xz4/955ULor/bty7C8X+9fjzEt6+KcngDw2uTI5znk6UohDciR+FTWE6arsrjyJcpsI48UsEW227pch4qE1BthH0/IIQFFJKBlPcXkHgGcZx8DflcaDMCRqvNaLlPKLQo+G/d38mf2RPiqWTsaRRWWIABlYkmpAO8iVPjd6DwvXvaArIUULIw3hfixzaFOc4N4RyoCGTBZX14e5i/erSTd4Zj++E6U+ukEgrvnHT0vTdPdJoWaVBVss5Ksxd0CIUdnye3WJYa7rMMo1O543EdwHj9eKdZYZSNTXZg35DqZCWE71Blc6Jh1+0RE8gVC6J/PbgmWVWw3Z0Rjp8/M/bN1090mpZ3Vjr+7qhgYjjc3rLK5IQBlalm3G9TR2LW3rUR/u6ZTr5/fYTDJUZ7334+RcEXhV/+XhQkJA9No+nF5jHzqaCh9ydDRMAtJHGsA0JAooAqr0oEVCXACDdVwIiC3jYlvgLWAaAAuLLxiVZYy1ybMG66tYOqEgEUiCMbLWuSiMceM4EsAhQZxhNbwhyw566RGIRtobJxyXZYhLdOdfLNyyIcFo+eTyULxpgLjPKnHUa4mGj75dy8XL6ccvtlGJfNi/4GltIRBaxPDh1YnaxHO/LinhBH5TKmMTnOAoWeU1ZiCCBDmxCuO0BEGxEA5oJo1rH4jntB/h2roib0i+fEfjS4OlXjKOiFlA+SfOkUsu7mMfOpAKL5Mi6nmZ45Dz3GdrwLgFkoumH5XFXEueRryzBaf2aiGi7jZ0518nkzol8rG5dodxbEnGAhxzUmqlsnx5cgcCHaXjSfTbKbel+IAwDRbnPkrU8MGVKdqJweju2FGwjLgnukeVSy3Lro5+wwynCpYYQbiHaZDKPdTbVbM+GmChhxXSdUFixDa5Jjj26yrC+ef1ggOZLms9+fdf6NS6P80+Z/EvsaQKR5ZOEa45qStWjnA96GiUmGCLGzIOdRPkgKpRcCzZbuBpkLVKo8cl4KmdiXF0A3FQCpWKmup9qXgzFehtB4dUui9fzuEH/8njAf1xSvsdqBooDHLWsVsNpYQnAlAUg24AEgMxaOAmIW6kwAB1FGYRmFNZTzie8DKxMNkWjs5BvHO832FyyjKqAit+VQ8JFPhhHuNa0oxPGiEhEwomKxB3BkK2c/B66jpWKXcjA6A0UQrgFrdv/WsOn+47fGthNCyPoOyzm2MVmJYM2T94b5+KZEwDpGPjcFMlU+oEprXjov9it4EwtnxT4cWJVqsIFAC7UDEpc8Ip/qu1KqYIkEhyOtgBygSUCa3xX3Q5/LEYxRVA70GFtaKXkUojBmv2eiqYAR7Y+pnbEdsECmO1iVCKiAygJJoITLinQKiSyxH5ZRwHh8c9gEbGBVMijaV6INiX1wnRHUQdAC0VFR2Ol15Ovhe34YrcIujhcVAWCEG4kuFXtF5C7ZTV06N/rLAZXJZrTVKgLJYYAJVhfbZeOTrdNC8V3XDnfyk5vDHM0CyyK7wwjrHGxPJGHhLK9AbXVpAYRrOnl6YssbJ1CBRXkWRrcC21Pq8XPDmmUKuiOtgGRIZJexKIBoHrd8BCqV9aP53PLkYEwMgjsUi8UeRG2K6ByCNXKhAxRdeuy1M3eHzaihrJNbInz5vOhfogBTSGRRGBFhPLs9zKeG4jundsZ3oLAKoW0Ujcbuv3dNhOOeDt0Z5ugWQNtSnEsuvKXBaL8fC8bkMAFjoDU+vTswwjLi2cY0JMaYakyMxT0jsolneuyesBmdTuuxV/B7O6HKPQ8+UUGivYhoMqLNCNS4ASgLAwHapiRWvHS4k+9YHeXYNgcEKPL2vGTL1w3rp1QJ53FASMEoBjKaxy2fC2SOa7rks6URGKOx2Gm0Te5YFP1nufDiExZp/ozoN57aHeKP3pPTIztC/PrxkNklYUY6zfZnARgzbiraNegje/14J4cbik/z+4lOs/8MfZroo9uwVA7V585Fzy1/B4wimrr61ug/FoIRn3CZYa1rW+NTcl0P6msIAUYtGbuIPr+ndoc5XMpHJVkuptVH++bJTn73iqgZ5XRaRRlGS2j/NU9KzEP3DqKk5uigusJQAT5YRvyW21ZGOSylfzAWIVG46f7uygGg7H7mg0wBjDJfvrwSZPI2zSPno/nNNAnGIbWp8ROnxu4AAPfdYYFla8fVJQaNbUxUImCDTwiuaUN7XEfHNvrSioYxYxnPm4U3xBfPif7otjnRnyyZG/0ZtHBW9MPDGyImlGYgaWyyg7avxLnEdVQwzjRibwHG22+N/ld1P6N1LhPGuuQQtOcwoCHXnqP5c8cImTCmYpdQqTy0PcyPb1J4DpvD/L61ET6Dxd7EMdYoHAqiU3BzxzQkx+K8iMCObkiNRts+b2GsT5UPrNIaZ7D4m/Ao1i2O/q+ed1PdLB/dJnK7Ni20kDif9Fy288gyC7fKDaXnLREwuu0GkioPTaPpJM+oBimaWpEp4Ke2WtG++rZ4DHDJBdEKQiTK4SpC6PaYND2+CVYMblSpMIo244CqZCOihGgjQoCvvj0Rv7I/xB/dEeLoo6OjVvLBCGEIHVxDWAdYbcstpGBZgsUFgLgfuJKjg8kR7sPW1DDCTV0yJ/pTbNOIK47D/eMeROSWnscpaywrrBruH79xOJo4NqgqVe8szLkChjGrQ2q0KozGQWWWSCQeH1yt1TqOySda+LstAueNnNcBkmwFUaAFXPlgo+eg6QQcuu0CkjIPTaPp+WBEQAFBG1gT1KgYDQPX1K3thP2wPqJNh9Emcj8jhcN2bBFdGwB0ybzYL94+3ckx6geQWufMFfCcxHauMMOyVbUkWp7aFcpESBNJVTsN4CC4wrT48yi8GGmEtpr9Wu6yBXDmRX+F+wRwVNZ4UfnenedyFMCMy9kZTux/9Vin2TYXgKrcTriwZeNTbalk/OnrxzpNK42B7BiobivQius4C2q+fFIBs6UpCqDjeGk/zZtNkywvTaMF2iv5cS35GrTTX3S8H94YNjuNEZAAYHDxYPUQ7sf2gKpEI76vmB/97ctHQvyVIyGzEBc7CqcYGHEvoxsSIzF+FUPvYIHt0cScdcQ2hQeQASoEo/Ase9dFOM6HaKeYEQI4YZEx0AHtPbiaHdPi66lH4IQmJ9kyin5GlWV0yh1AWYBuaE1q3NYVVkc+RtbUtyVjcD0BJdqR0KDqVAD7Eon442hjYmxv86TkPFjJ4iErNp8bbPJoGFV6HhgdAGbuwdYVQQu0234XifPa2pWKyoAe54cojCgkKIj17fE43LVPn+w0x4fOMmLvoMDCdW2YGGdMiz2PNh3aY7CIj+0M5wI4eSyiEKyWHUbLetDCCyuTiMcfw3WObLSGd+Xy5YcEMl3NYHI4xm2iID+4LWy229Cp3zgxke6MxA+sWhj9e7jlgAlDzjCEzQmTLPt1aTTVvftBlqKQuymYqkA7Ee3Fu1ZEuTlMcW+I37kk9gdYzKaO5KzGjuQMfL97ZZRfPxbicO9j8cTZQdVanThHYcjkApkppDSPI58EjXleBYyF1OMWsAQ4+5BGNbJKB4wmkNWJypoJ8Q4EZRAlRIQVVgN/MmpdwIFhYwtmRr+FQM7lveFs0Kc4N9WCEcPoEJxwgxHWEhFFDBp/76wY3kWnCOUXRrlgIDsCGbAWuHdcF8PL0J5E/+W5XWEOoExXGOcW8yOLEKwruio++8B0cyC9yhW2pCjYxSqYqoD1w/xIVBio/PCfoAIwZ7sctJ4FEVtUPC2TkgsQxJGP9wzGQukqOazgjQJYrPouqHYYSV+dcEknTI4vvnV29KPtKyMcQrcHCl+gLd6JwouCPpPFPo2+wvK6hDlCJec+2iEU+5EPARNETnEuml/eBoywxugrRD+n6Iag16HXk7cBP1xWDKSe2xX7MoaXIeCEKCsgrGpJtljupVs7kVYouTScG+fF4O9wJH6URn1vGEShTHAGrijuV0/Fr2DGxpblUbNNvWRO7KeTpye3AFpMNnYcX4rcgDVVIGJajGjl4OiOcLOs5DhHGs1HjydSQGGK5lPlpek0D02j6TSf3LUhYLQV8LrEILnNaE4orkoEsC0PFxMjZZww2QslhQcBIMuto4XdDhQKuHWN5Hg7EM5j3ATri3aiGOkDyGHFMGY1B5A4L5V8LnsaVhCAO4yAU+48igJI5ShYLgDI+zPf4bYOqtKCEAI8g2tS1bCEhTv3Vd0ReSSune8eaYGj6fR8EG3r0d/BlKIw29KkPLZCTb6rCr5buls+Vd58aTTdLZ+8r5FVAkhXGG2FWczSz5PHKvTFpeXOI0L9cmHP5Vft757kSiE31jRfvmJgzElR+HyQDT4VLN1SBlh6Pjcg3UQBk4MxNuAoiIVgJHnkwk+/08JPRfMUmy9fmpxOv9vySEt4NBrVIxvYuOJglNLc8sj56P7SzmEfmK3Kp9pnVzEQ0WPc8uWTohB6pVJAsKmbFtFxfBHnocDQaCgt5KYoZIVgpPslqWCg+1T5S81H02keeZ8tXVr7xraujlE1glpGt4JOIaJ5aBpNLzZPsflU++yisFGIaHq+fFSKQvhJF4Wp6HYgJNIK5c2XlpEKBrpPlb/UfDSd5qFptoWs2DhTrjBK0VQ3OcEotWC77fdCPX0dRQEUhVC1TxZNV+Vxyyfnpfuz6dKfTtOy6VIhpuctVMCpVJFQiBZYh4qIZga1kVglbURQG1ler40cWquNG1yj1Qyq0QIDq7WGAdVaE6aIlVVqraaqtAnYNlWtNSEP8g8LaLfg+ArzfMXeX0+LrgLHxo1qYOOF5DSsDpdzUzMwFrY4brDRNDldfKf7u6OeOEexUhTsUpQPIgJiRZ02QnTg2xTQbrGJptvyYFsb45DteG3M8IBmTTaW74+CpYKPQmgWOBmwImCTNKpBG21CV5eqAEBllalWaFBNqhb3OqZJq26dpq2cHtUOhBP66URKP68z/YUZXfrbc2fr78+fq384Z5b+1Zkz9M+m09rrzNBeTqS0c5PD2vZgh8ZwvAl0QBsrAEbfK85dIZ5DcV83LgohsYhZucCIYVOIkJaNTUzEDP++q2RGdF+iHcPaoAHjky2YAobIrxg5hIinfUiakApsBTzdUTEwZtZArWpJTWjuSM5tnJjssqkjOcMmmk7z0DSSjkEC9e3J+Kh6CUKVlZMhpPsdha8EmfBpI4fUapWAY2B1KghownHt1OIF2s+3rtH5qR06f/aozt99lPFvXGD8O5cZ/+6zjH/vecZ/+CLjf/YS4z99hfGfv2p9/uQlxn98zUpDnm9dYvwr55l5/KunGT+3X+f3bdD58kX67wB0fYemAVJcH9bUhPOGnksBnXJ91SJhRNi/dUpy2caVKb52aer/rFua+r0s7KMqJd0tj5yPbpeiO5ak/m3l4tQ/LFuY+qvF81I/WTgn9ZGmpS63Tk0ux5qitzQmx2ARKICLIXHo1rCG7wFQBSwyNKp9VKp0epyL0C2xcFb8QwxGwKwRL4WJyvfeHuGwxCNEMMbtXukzurYD5e9U1nGwfgAPFmp0ozZ2Sljbueo2/Z8euFfn7zyq8z+5aoH1q+uM/+I1xn/2KuN//rIF2Y8yoEF/+gLjP8jo+8/nvmM/hDzID2BxvIAW58Xn955j/OsXGH/+hAXorJnaew0dWheABJyoJEyrKVUeVgUkwLEsurXfvrix5X7qYyHVgsciLZtHBrMxXZttM6KQLpyb+t5v37J+iJtN+NH/HLXky9YfgT8Rf9KHVxj/0jmdv3ZG508d0Pn+TRpfujD1l6Fo6khdWyqC8Z0YXI3ZEMrpSV4rmKoYUKm13DYn9hMMVAeQXuq1Y9YoHXMFctXcSCWAKJi0O0KCjcKYKcgo1HA54XqOatTGJHXtmcN36fxTZxn/8Fnrf/vldes/A0QCMK/0g4xlRdkQ18b3rz/N+MXDjK9dpv9+4nRt/bA6C0wAKj+PkAWSsHQUNntbkKbTfVlhRfEsjOOTrfNmpz74xfVcbXOzStSSf5qpTYVbgxr3l69Z0CLfl88xfuGgzjeu1Hgoph0b05gaj98Bg67hOmYLJy2wPSzAuHh27IeYJgXL5aUwsB8LUDtgVEIoA+hm/eRjLKsBCAdUpZqG12mj0N7buU7nrz9o/ScAAP+FH/AVI9wTgPz5a5bl/PZlxq8eY3zdcv0PgXYtAijRnh0R1DPuqB3AHpMKRtwUveGPmwSwgBTPC0jR1vjMQzrfu1Hn0yKpPZgpAYuZnX5UikoEuFdgrCPv5rD1B3bPFbUg1JqHBlJjZs7QPnv1mM4/es76fQEgfnP6X/QlwXLCxQWUKBeorPdvZnxSWN82sJo1Da5hdQ4YHW3DbsJqhzHV9kmBUSXU1LCYqLnRfrl8ROeL5mk/FnMEbS6sraBmpIJRlZbNkyvMKMCL58R/5C+MmZC/IxihUoEoaTBVAW8CFgTRTvx2qOgAIX5X+lvfLEJgCOUBTZ0zOxmf2KlvKKvSW4cGdKUrmmszwlWlwRp7twbNM6oxHcgGcD7pMMr60Yu52vyV+3W+YI72XcCIBaFc3/REYXRL6ysw1pcCo7uG16VGwJWbFtX2Pbnfgg+/XV+3gqUI1hJQwoXdu4nxuoksCSgr6oXrWhyMMpCO/SaM/ZbRVXBn4bIgKvfiSZ0ntdQF/E7mosD5gMuX9nGBMaiNRAc7LOxda3T+3atWgb2ZLWEhoW2JZ/zyecZXLmb/MKRWrx5co9cKuNysXvEw9lvGgkItj9oe33et182lLMxlE92AKwXGTDurT8MoniPjrgJAWMOOkLbl+RPWbwO3lP5uH1ehckY0Fp5Ay1R9SVml3jYiyEyL6AZbDkR110Y/jCVKuCuvnGZ8WkTbi98s67aakIl+OxLgoCDebDBmhEgpRrNgiNraZdq/f+eKBWJfiIr6LVTQ6LtEn+WShewvBlbrjcPr3C1fDkY1sP0wdlMogBgVMn+2/u2ysamObDeIDTRYkyJg7C03lQZw6HdzOzfbAiAiQIPPs7t0/otXP1nW0E1iYAHakoNr9Vq4rhS0nES70plOYPzkdG3cqNANgj8BlnLdMu3/lY1LtTuAVMnFde2Vrg1YRnOom3BBFTMdMt8BIEbPVLZozVeOMv7r1z9eAZobFdrJsJJP7GV8TLMeGFSj16s7+J1wZmV2bfTD2C0BSNGg37RK57CQ9hEteeb93UQwAkTMjKifqKVef0A3C90n0S0tJPwmv3mD8ZfvZ7ymjU2H20qBlC1i7ns/jD0mWEdYyZWLtP8CC2nr+qAQ2mY/yDDqE3oPRtK+lWAEiBhJ0zRZm/eFJ6yKhz5/v+xCZfX6A4zXT2QaBgrYgaSWsR/GHpcYzHzbAu2XaHurrF8+9a5lVMMIEDGHsGqC1vbWw4z/+rrlDdBn75dTABK/WbCDpe0uqwuIThj7AzjdFQopBjtj6Fc8pT1hAkkLOJVkJQdU6S2+B3DyRFMBImYv4PPZY1bhos/cr/xCu/rFk4wDMIzYoZFUGsTpj6b2oAAkfrt3HmG8eoI20VrJWw0fnSM4oFpvxpqwfQFGACgm357bz/ivXnc+a7+KE4A8vo3xAVVsQgXph+yH0QfBijy5VzffiYjugyyI1DJKAFgw9g3LiP3owji5XTdd0/5gTfeFiDNGcG1ZzXhZFWszoeuH0T/hD/jZK4yvWKT9LQI6OQAz/Y7Zgp+bIdGXYMTIGszrQyHqq90XmF0hJhLTScc0b28LfbHwmiJJ/UEroNMPo69CdPWrTzPePFlbgPde0gJP1RdgtCKnWnMorp3ArJW+0qEPwMypbplpTZiPiqFoABBLcUDIJ6LaGJABiSU5xCRzel6/BBAxQOL6A4yPbmRVbqN0ehVGMeO6p9TXake0tTBSBZ3lWO0sZx2FpDZjb4zAETBmgMQwN3TqYxY+Cjt9Hj+F/xABMTHm9UvnGL96nPET23W+YaXOF85l30+n2RuRBHsA0nR2dUYXe3vebPbBbQvYL+9Zx/iT+5i5osD7F3OQ4ly9VT5Qidy3MeOuZtqPMozWshu9ACPcjA+escb1YcGhnhBmDYi1T8ya8TULUlyLXt8P4V5gYaZGtN1YesK0QH0RxswKbZiBcXKH1U6kz+KX8F/BmsHN//zj1sTerhnsM3XtenxILatBRzqmLmFgNrwJzJiABlXrQWzLaehSGN2oj58wVV+2YC776OwuC2pxfr+h/PFLlhWfHGY7BtWwYH4YK1O+9DOKH3znOo1XT0i1t0xO3VqatIys7ebJqQVwBzumpzYkNe3Cwrna9+5Zq5uTg9+/qJvuCmpZeh9+CJ3kqM0Bm2UdXWCs1pp6E0a0E7u6tE+jIuutKVCiEoU1W7FI/9uqVr0DcAGsYXVsPGbUY2YErEpuRIuY/ZDbFt9RsCvq2dihtawa0Uy012rb9M7F8/WfYpSMWDeJ3oeXQnl4aDfjA2tYo/ksfQFG/BAbVmi87JbUVCxv0RPCwlJYVApTmxA4wZzDxknaLKxv896TenbWuZ8d17DMWDYQa3+i3462FftCmxHr1KC9+NqZ3nNPUebgKW1axfiYJr0G1g1tK7Mt5RLwkCXSrM9c5zo9dliAVZZVsnbkWbGI/d3bj1jX9itQZa778zzjCY09BSDlZ5LajMkhqB3nzdZ8g3HzKo2bcwLFaBVZilEqDotiS8tsS9bGerd9qhJgwgLvvlMzZ/CjNvQTSNSGm1frHJWdaJ9R9SaM+N+3rLYqK79dNzEN6aVTjHeE9C1l4/V2FYSlwSj252ZI5I63QC2vZ2MB/NhmvQ7uKwIsKBv0/rwQysMT+xjHejqydfz4wKiaRyiOqU+Vw3ICyjkzta989Sl/LQCu9eppneOeyrFwcHbBp953U9Gf2DxFu/UbF631Xui9eylYCZS1++9hfHSDPg4VEgWMSgbNykMn6jqHnDmPze3HyBhAgYAPnt8PIBFL+OMrjHd0ss1oB2crkr4JIwVNsn4q2EzgFDDK4OJ9C/XaCADZPEmbj5WmzQVtFffX08JykbAAKV2/jCAJtYq9aRnLxmvt+zdbMzHofXspAeKejYwjmDE0wKpUsFDly5PbbwfSmW5PM63keNYBFxllwg/vAJHV3XeSgQA2GMdr7b7DOD41IWfZ1DMaipLSmpLzZMAFkFPD2i4souuXNUBh37kerqpmuapQL8OId040TNJmIBL9Z9ec9+yVUNhRGO9dzzhcxfI6+6JOKtGpSAI6O2hiipJ8nNQmI2niPNg/vJ6Ng5W6eCi3vIqXwiqEMAjjW1hLeV3GVc0FcHobxmLVDVAVApDLbtV+Cxj9aLyjxn3msM7Rlyf37ZnKjk31F0b837vu1H2fFoXxmg/ci/Gaekt5PZbEp6CpJFs91X7ZIrqly3nsApCw0G3T2Br0SyLwRu+7JyXW7J05g30OUV47jPXJoVkYPW5POWEsAJhbO9LhskrureoYyRVG2w0jYy4ftQIX9B57WmbH9ZOM17RqU8w3QPWqZezk96yO8LqJWuKPnvJ3pA1+a3TeA4phAXu3RGGQaDrNQ7eLl7CgiLSe3OHPvE14S4e2Mj6gmrWY99E3LaMLnCrAipE4jqyYjUmzjGnX4DZ53bdmdqk8x3gspT+GOYK9DePmZRG+Zon+z15XvEJomyOK/UfnGW+YzGYPrNEbnBZRAOUETXZFZVE3lUJWinAetOHmzmbvo1/aa48Jo4I+/RDjtzSxWvSH9lEYqeR2pAuosiQLaIPQFtzRzKXo8T7DF056H13FM6PgL5qv/yTbbuwlGK8d6uQ710T45SP+dXojgohKb9ZM/T20E/NbRCeMOeXLQ7dLF7pVsGTGF8957zGggsb813CcnRpcywJ9BMYiACtGKgCzINojqwIG9P3t2aibAQV6nz0tXGP7HdZoHBlEv2G8ur+TP3ZvlH9wyYr00vv0QnD7jtxlBWzwAhn7yBkBEpUTlvx56HbpQr8fBgZcOGRFe+lz9LTgtmMx5LJKowPR1FybUXRt+GAlbF0bKlAKSVhLup8U8kJCV8OMGdo75hhWj90S/K4P7dI53FQ6dclPGC/t6eTvnI3zH14zHPfohRAkwwyW4CS9S/SrUVEoIJpHlY+m0TyFjqd5sI2hc6d2+LO6ASoptBsHVhvNsIy4fu/CaFo1BXAq+CiACsBKEYaoodPbjwgaftcLh3SOa/YWjFf2WZ8fXNT4D1/0B0Z4BFvXwCpiGJoTkGIgcctH02ieQser8uA+d65n/HdvW5FfQOmV/voz1lo55fVG5YiGdA3up2/C6AZgD0AohJdi1rRpUz/7mPeDyfHMl4+yXoXx8t4Qf+VYxAwmee0JQAhSfBFR5DZ9Gtw/VeEvFhJVPppG8xQ6XpUH1juls8sP72b8zL3W26e8EgaNY/Hj0Y1GjQRjajj8eX9h1DlWRXOA5gAw48bSdqANLLpdhMwgTqocg6RfxSBpj4MZeOYXTrBcX6N0L37B+MyeTv72g3FfreK2O3JWUVX47ZDk2oM0jwommkbzFHu8bbuRVZoDysezDtx3aTI6cqJpijzjWQfcYuu6fWYEjksgxgzGZGCj0NrySdAq02maBQOgwPhMrJLtdX8jnhnv6OhNGC/v6+RfeyrlC4yYv/e1pxlvmMRmDq3VK9VBFwoh3e+tigG0Z2U4hv1l1TeiqQRCagGVoFHYis1jhxHdG9C1U7rn3Rs4P5bu6y0YL+8L8RcPh/l3n9V9cVFhFc25e9Wsyf4K7r6n0gHMA1XJwrmMqt6HUX6tmqMrohjQVJ8qEGmaJczlq5ygTfjMI1b7ht5rTwrPDAuMNzj1BoyX9nby6yejJoj4D+j99aTEcC90oGPYm3t3RM+KAkW3+7R6FcbVGscoGFt7zxUkFUwUQsX7IuT8cnsxI1ipYIfGvnLe+05eK5raewEcwPj2gzFfXFR0ZyBwU9vOwiJw45fyWTm5/VgoHz0GK37nrJjLM2G/UHZ/5hilNZX2NXbVj2gwKnsPRtd+RgpioTzdgxHtxc6YdgTDtX7osetm9jPu1jmu6YSReb6iOGD88uNJX2BEGXrqACbQ6mbfmZ8qBbJijsnKDUCHVNAVcY7cQPFeiKauVo9GuSG5QOcmsUYo7sdr1w1tqB1rM89s3mfOdbNgTHgG45WMvulT/yKCYXLfoixqmdwgoHlU+WgazaM63u27tW1UWXJeO5dmVI1qNMx3MDqE/Y2s0kqX8tNjhWz7u+oBcu/BiK4NBSR2ka6MrKUj++S0YqDEimhVWuPje72fuSHGpmIxJPzOWFxJLjSew7gvxF84FOZ/fEX3fAA02qQYi4q+uuz0oDyAyDC45RPbpeZRXcftu7VdLIys0pneHRil8/Y6jD1tGWUVgFKMvsFykQjD0/vsSYlZG/EUexIzFmg/mtcwIpJ67UiYf3TV+0gq2t5ogwcnsS5Ve9FRgBWQ0XwUHHr8jUkBiiOPAE0Bkep4NxjldJrHhNEWwNH9bTMigCNbs6xoe1Bh8eg+Cp7bcZk0PO+BLf5MrkUB/fJ5xrFU4PA6ObIou6netRnRXsTIm+97DCKEyhyDG7C8omM5wm4KhZ/uK1152nK9JjmAgzZjbwZwugsj/V4CjNYrsbWGSSHtrm9f8n5MKoQCiiUdsNZLrs/NXxhfPxn13EWF4PIfvdvqX3QWvpx6BrCeVAmw5gvElCQp0tq70VS4qRkYZYhUILnlUX26nSMDIrozRjdqY7FiGyDxY1EqDAoWa75Y7cXcArzQgGpjgtcwvnUm5suUqWzwJrPYUikqBCh1HXPHWCDB3bPnRSE3qi25AES7I8xPuTtC1S1Bt6mKSZeVrhnVOKMB41NvXhjlNJqHHC9eAAqr+PBu/1ZEE29L0hl7AcvTU6vol2V85yxg9D6Siqjx8kXsd6pIaiG5wSjvd8vjKgqbL3KDMQefXVabMWMZRQBH750ADgWrJySdD/164lqndlhD3/xw2SDMprfeQKSPxwJMAkC5hrcso3cBHMxh/NxD3g8QN19Y8xJm9LP3xABoWiCpdVPlofnkbZpmCUEQuk/sl0XTpcCM7Ts9rkDwRZVHdf3GdMCmhnRtVo0zGgCmNYWqSpvgP4wYgeMRjNJAcPQndsb0I4ACARu/QIRwvbvvwDKNeptsDeUC4QeMX3gk4TmMcIPx/8ILGFTNGvBs+SATonloPl9gFF0SxYBmdm3QPNaMD3XXhgBOBaM4v3BTsZ5old46b47+LT9hBCQApickBn3jbcEmgFXaBKzU3TZNW318m26+AcjrZ6NCcAjLW7ROY6swT05V2PDdDxjfeyzh+ex+sa4LunCw9CF9TgcIRSkfTBIo2Kb9fw5rRs9HISsWRponc15bugCQbhMghZpmNFqWsRdgXLdc/0PZGG0y2nE9IbyHHlCOa9Eapkb0+25fov/Lo3usF6rAOqEjmt6L18J1799hvdPdreb3A0bMY/zS40n+Ix9gxOLQ4QQ7bS6ylMfi0e/usEqFXZkmwyiAk2SDRzrGDTIHaCKfZPVs1xF5BHgKF9TmjhKrmIWxK4i2o+8w4k974YTOz+zUzfGaN6xdurmkxesPMv6FJ6x3GSCqB/nRdaES3tuAjn6s/iWshKpQQn7A+JUnvYcRz/ydy4xPj7FD8nskVM9Nv9PfxA6D2CagyUAJ8OR0GR5XyIqFUaTLbqhwMxVWj0JI89DtphmNOTcVARwfYITQnSDeTIvobU8I1hbBEpzXjxeYFBKs4mN7rMHSqs5vX7s2MpbRDzcVzYFIkp0VLwTNLxk2IhsgAgBVHgkOClJJkIlzye1Bei0hGnxRuJ302pnj0Lkv8sjfTRgb07XWcDhYRh+Gw30ShBE333yG8YnT2Z2Da/Va54K9UA5Mr4fDmQGcR70P4Ij3XyZ19gx9O6/8vWhluyTcugp6Wm59iuruCHuaNUHYWuWN5s0J8Cq/56Kp/TD2lOCGw+JvXJXp5LfB54QRhdQPGD/3sPddG4hSQ0aaXXcfgSMXYppWrOTjpfOU3JdI70XelkFTiebJlzenfhh9EqwC3FOMzawI6rfgDUvui/XmCoXnMO7t5O9irVSPYUQ/Ixb2WjiXfb87I3D8lxuMKugoWBRaVZ7ipYDR+37Gj6sAIpbuwCJMEzvZRrubRl1U/2F86wH/RuCsW87+YMEoCrnkpsojYgqNjHGky+AUKwqcW5oMh3A5xVA6zPInAAmXFO2+TNtR3nbkz1hCWWoYfYymflyFrhOx7ov1Polc499ZCPyNpgLGN075N1AcLwIVb1eyBUEcgRARWCkUwBH58gRfigrgiPPLeWjgJROcofu6qSygLmnZbfQzmgGcfhhvSCjk4gWgWM8G0VO5YFFLSAup1zBexhSq4xFfFqNC+Xlkj/VGYvqcWcgoLDQPhVEFGoVNlSfbtUFHxQjrlAdGKpqHQOUaJSX5VPlNZWHsd1O7LRRwLAN/Yju6MVgdXktNgctBmHNT7TB666ZiJfGXjkb4R1e9X0kc3Uvo78XzVtQb+SHrNozII2CTuiPouRz9jEVCJrmv4prFwqYEjRynzNNvGW9MsIj/6U2rP3FYLVaiRr+hs2BRq0gthueWUSy7cdn7ZTewagJWT2iZypYMDRjkRTcEKhk2KgqsKp8tTQyHk9OdkOW+q4HpaSnBk9Ky2/0wdl8YWIDf6sF7Gcd72YcG9Cx4Thh7102FsCDV+xe8X5AKbrD5iuyZ7PN4u5J3MOazni5Wz2EVcawTklKVD7ii1Q9j94RRPnDHtq+1ZrRjrRfnC0Blue0X/Yzew4ggzhcxWNxjGCEEcfZvsiYYiwrKpnwR1KIkIqOZycNyBFR8d0RIpUhp3vTSJeCWt2keOR/Nb6b1R1NLE9pbCNR8+zLjKxaxv0NhQxvRzfoVqwE1xoQl8xK/8BrGzzzgzyLG6Gt87TTjmCyLdqN710I+ydDIx7rAJECUuyQoDNSSKSCikNA0VR6aRtNt+XAPIo9oYwoY+y1jcYLrhRr/6nHGJ4fZDoAooqZWIek+jINqjMYVCxJ//dpRb2F89XjUfBavgzhiNTx5jCp95sLWkcKoAFCWbCEhE0g1NHm3AWtDumZEMF3tieRz47u4dr+bWliY9YElOr51ifG71uDFlvotYqiXvV2YK0j2dpKiIJJI6+Bao371rfF/fNVDGLF26nMHw/w7lxDE8d46YiTSwa1wVY12wFFSW5C2B0W7iloguc1F99FtRdtOtY1PADKsLl3rtYYG0oGKYLr6lqZ0cGS/m+oudOIDQrikeB89JgjjNwKMFDYKXL40mkfAePui+H/zEkbokk/zGiG0qz//BONVrcbkYXUCONHdIEt0RwgQZWhJkCMLosgjp1mBG4cLWkR3g5w+uDbdMGe28fWrx6wV/fB+FK+EFyGdudfgY1vSLRUNM4L9lpEIS0f8+CXDtITHt1tD2+CSypNlKWwUuHxpNA++owtg47IYf8VrGPd28jfvj5puJH3unpZYRX2TOWDe6MhaR2oVaXeEwqI5tj1UWWV60u4NhvmKbzEn1iv99i3Gr53CGrNYM7UfRrP9hDGbmOuH7996RuN/9HiM77ojzsvGsskCQhkqChsFLl8azYN2J4JA962N8pePeAsjXNXnfepvhGAdv3yO8bqJRgprxjpBFG4qcT8pfNT9VEBUjKiFpNYSbuLA6vSEMzsNX1YPxDV2rjf4gKp0+ycqgIOa2gIPAQbDdNXw+b2rjH9wUePvPZowx29ePRDiLx6czveui/DhdWycamJwT0qc/9TWCL92yFsY8WxP7Qrx66c1/pOXvHdVIbQdD8ltR/FqNRJcKS5Qky+tsLKuK9kWQlBleF265vIR79dLQnlE99jiBcbPy6rSHdIaONpIuGJ+wYgZDohO4lql6M9fsUDqjgAi3jXxncsa//r5lDnZFgv7vnw0YhZUtKfgxsF6vHgoxB/ZEeaVE9BG7DkYVZayop6NHd/CWh67J2xelwLUk3ruQIif2xXiW1Zp/KPnDF+sI9re+L9jKeNxACkskE3y7AhVt4Tcf0jTSlBeGBvTAQRUGicb876G9694vFyLuUTJFcYnhdJ347q91s8I6/T5xxl//gTj105afrNN2EeEOYKfOqvzDy6m+DcvpPj7VE+n+DeeTvGvP5XiXzuf4l89lzQ7ud99KM4/fTpmvrUX4ME6YHgYwMPaMPgOAGmhvbo/xCeHtG1DAoZyYaXuiMKI72gvTpyurb+EaOcBJ0A9KZz/wn0h3jJFX/zqGcOsmel/44WwJMrrDzA+viXdZhU8AqQKwAIQUZjk/fQ4erxbHrQX1yw1/gUMeD2gHn2xL57CvFerm6NX3FSxOtydKxgvG8OmYuGiYoQVqtumplZd2msVLAx+zi/L0pnKWD3sp+C56ZUjnXzlwvjfqBaT6kmhj3HezOTXcT16Dz2tF2Dx7wmb7vfW260BDPT/8UpoHyFyiDZZeT0KnwxkfveTwpQPRrftvDA2Wl0MQ+vSgeeOG567qBDc93vXGxwuqnkfdsvoj5sqYNxkrpuqt+FFMELmeyiC+i3yPqHh9foYuI2P+uDOQS8d7uQnt0Q4on0VLu1G6nLK+93SqIbUGoHtq2Im/PQeelp4pqObIuYLeFqmsNuwTo/Xr8MTgksMa3D37QYfUJ1uQ19eDsj8MBYSBVW1XQhGQLF4Qfrn+D28dt/FKx80Zjw3qCbdZAWQMosYYyVvv2HcvBrrieot6pErdFa8PsaMOtaxsYc2RMxCRQtaT0u4jJM6tS0AxnmPTrlBSKOrQuh/q5+op87tCvMXDjrvoaeFfsy7V8Y5+jXxfx/YYtXQ9D/ySmg/wjVevcT472Xj0lMs90yKarpA5AYTTaN5Ch6fiaICiPqOtIHX9iEuQe+7p4Xf4M2zBh/TnG6El2DeS24Ejj4ajet5c9i3/YXRWtyXFlJamIXQzYDOca/744RgrdbdFv/fA2uMZhVc9DsVTaPPiAHiqxYm/t6P50EbGF0nC2Ylvz2oNt2EtnDzFLboGxesYBr9n7wSrgWrsGi+8RO00cqDOSiKFe2SuBGhk39EsCtw/oBh9v3R+/VCaB5svd1yUXP3knVT+waMtDBbsiwn0gfVsnpNS16+dtgK09MC19OCtXr6vjBvmqTPhTWhAFK4VNCpYMR3tBVbpmiLn9rtj1XE7/X8wRCfGtZ2WUEpowr/+e4NjP/qdef/5JVEJB3assbgQ2rT9agcZEsF0ZExPS2z4FelO6rb0tOvHDP4L3wI2kDmKx+eYXzCtPRKEcyylHkLFdpplpvaGzDmZr07QbQXcLwNt3mSNv/iHqtg0QLnheASn9gS4eOaWeOgWqNBBVspQvsTFrGuXY8/uC3CX/KhrQihnY32dlUrmyRmmiCSiw75L53zxz0TApBwWdGGfPog4x2h9FZYSYxEycLSXRiFWypvS+mAENYQIIYT6TOfesjq4PcDRAhW0Qxk1aRbbBWQ6Ge0YOx9yyhEQRR50G5EYT54p/ejVWTBjUSnPCwZQEIhlmds0PunGhlkY4fXGZWwhphSxPTUC4/uCPsGIgSX+57VMY57F0PTLOvI2lYuNv4R7RivAxdUYkoahh5uu8PgVa3pKYASFoNaShtQ3QAUbTMAgODRpHB6+6kdBv+Tq1aFQO/LK6EC+vAK49Oi6QOoEGz3aO/0B4y9EcBxgkeDNzZXtcZovHV24iMULrSDaKHzSrgeXFbMrpgwRV8yvN6ogqWE+4oCDquNLgNYnfJ6oxLBGbiDyIO0QLsenZVOvnt4Q9S0Utd8CELJQuU1uyv5BbMQmJWINTC7ImhU4v4vHfa3q0MWIpi49mcfY3ztMuP3CKYgqALrNSSQrkeghwZfTFgVQRkIUcnh9ekauMDoSsF5xrWkJ2gs/fzx7Yb5PhBYQ79fhoRg2bG7c90ZtmfJviy1T8NIXNUAq2yerC3w01UVQtsOEUlc+8D6KF8yN/GzWDx1tm2qtqppkjYHrmflBNZW1ap3NE3W5nVM1zbMTCff3nVHjCNiCksIt9eP9q4s0fZt6NC7YKGt39OyjCjQKPjTosZ+vCfDz2AOFdadRdnA2rMP7Tb4kgXGbyZ2pjcBxsE16UZh2VCYZWEfhHQ8C9xdtAVhAWfOND5/5G6Dv/OoNeoFQRqvR9eohJfImm3FqcZyVBKmhc9252BkUZ+F0V1wD4cFjOqda6K+9M2phEoAlgaChcNgAgRiHt8Z5me3R/jDO8LmNqAT+QCEn5ZcFtzsHXBR6ywXVe7TE9alrDo9ccNKq8Pbb3dVFsqHmMgNFxIu7GtnGH9in8EPbTX41jUGX7c8/R9wrZcvSv/N2mXp329ZkzYHXO/bZJjtsRdPGvxzj1vT38QLlgB6bz0X3HHcA+4dv7PpZpu/e24sbh+2jPkF1zCVSl58CVFVReHzU7g++iQBKEa4wAWFsO318LZihHt44VAnj8S104MDcFGFaycVhAajCiNQ4BJizVM/ZiwUI5QV0TeJcimmHsGllSVPS0I+lC/zbWTXvF/VoBjBPX32GOPlQaPSPvqoT8HofIloIVntHDZ2dKM+/sTmiK+BnJtR8B72rI1xFAJziQdz0HWuEOQKgzVQGm0rjCPFa/bof9ev0gX3FNZ9Usi4W4y2MUHM/g/ETb1ZoqmyEMix+hz9b4PdLBID3qeG9V2Da7syw67ErHi7RIQSba8pkfRuuHiwSOiGoP9hv4oTBjfA1V51m/FPiBLTbhbbCCHR6X8zwgjriMjlvnW913bs60KwCeNe4X5aETtF2F8htGu6uoy3PnrOcvf6gSxdcI/h7u/bbPUpiqF/luRJ1ZnVDW5mGCF0HSBiiYLnxyiWm0n4PZ7ZG+KtUxkZ6VFYZqGoTE+aP9f4LoIeCKj0A1ma/uINxh++z+D47dHNYv+NM+v7ZGG0mglwV2+KNqMbqAjmLJ2X+BXajv3uqiW4prCKt81L/mxQbVeLW3+cm2Qglyw0/kK8YasfyOIEEDGyqKI+XS0W48q1z8XvLO/D0pVYB4eN69MwukEo0sxO6zqjZueaGPdyEeCbSQBx//qoOXEVMuFyLHORXzjGnNJTmZ60YrHx9+ijQ/dAP5DuQtkGiBcOMo7lO8x3jSjnbUoQCuVg7N2B4vlUCEYItQ+Wrrh/a8TzFdb6uq4dwmz+MMd8RbQV5cIgW0hqLW3BBGl8pwlkVbpj1sz0F7912eo+oP9pv6xgzW/eYPzcfgGicPnd4BOLOGfS7DCmO/oijBQ8ul+kwV3FCJPzu8Kf2IAO2onPH+zkBtNexkwI0S5RAVgMjOZ+yWXtjKePv/dEP5Cy4Cmg+wKRZwRrYBgsi5hZeEtRXpUSMFoBnN6DkQZmHDdaII/Yh3GgGDf60PZPnoXEIIMXD3XyuTOTX0U3RhYkafaDPAtCNdhaTlcJ3R4YN3rtlGFaAT/WX+3rAi+IOt++1Pg3eJcYbmhFSmnAUbFmbGZ8sCmz0utDMFK4ilfuoQBkTas+5fjmCMe7K3p7hI4fevGwNeRu0ZzknyJgYw+j96wQpsfCUlhbFEEdvxa16mtCRYSuCwxuT2rGRYBozuSRX95KZYMReaQy3FdhVFk9uq2GEQ/MKrFMBtqQB+6M8lePdfo+oNwviajpU7tDfEY69dbQQFdQBrGQpeuuMBB7YE1X67w56W9jDOivr39yrKQov4gwH9vGOCYG4M3TZtl0s3pyOXVL62swCt0QjJnvVkiZjV++IPFXKLgvH3EW5ptZcEnhiu9dF+NNk9hcwCEWeaLyAkoR2KltT8dObDfMaVBoS/bWYGw/hGgynvGthxmfMYO9AwittzMrLJ8KuOJh7IVoajVrcdyUq6QHpg9j7qNvsmXjMa8QbuuUkLYDkVa4rRjMTQv2zSQxjeuJe8PmejbmEoOBriCFRVbJMErRVNs+mi8znnVgdVfbzJnpL2BtWwQzUIY+TlDimTAg/YtPWkuMjmk2gphkPiJokNeWZ17kI8ojVT5Qe90ylgyjAK84GCE8ICKtY5tZEO9ARLQVhflmG7GDSgT3/cyeML9zSfwPgXYjhvah6EdUqWQIuylYSQR3MBh97mzj/edPWO1JlKWb1X3FcDa0h2EJv3Ke8V13Ml7TboTxEh9MLLdB2JMw9q2ujRLCwQUlfqiclaybqCfWLo7/68U9fR9Ked7kk/eG+drbEv+zeTJbODjQ1YS+rCwQpDuCStVlQWXLkzmvLU9m0IDqXCI/KgZAieFfc2anv371mGFGGlGge2NZj1IFAFGJwArCJf30Q4yvX8F4YCKLw3PEig1yJe/UDZTdm6mf0VL3Hxa1Fj7RloSlxBL3dy6N/wdm4KNfEgUehb83o69ibiRWA0B7EKun718f43NmpL4caDOi6LIYVtdVl+22cIGDqjt5is0n9pnpGSssoISlnB4zDu9cZ5jL+wNGzO0DmBjR09tzDVEWYblFW9B8a9Z5xh+5j/EFc9lHY5qwvqzRjsns2TIkpChjNyQK4/y57EOEa3GDXgl/Av6QLSaMRisslxiFIEy940bNm5V+CMfoBWxTUOm2JatWM6oElFgqY9HsxA8ObYhyWEtACRDEBGEvx7uaE38PWvDBSuPaePfHsc1RvmRe8hcY5I0CDXcU1sYs+BlL6AYIhceWTi2eNESOQlbwXIo89DrmchmZldiwndSNS4fvMvibDzL+x1csKFHe8ImlMFA+vAIU58X5cR1AB+sHw4NOeyzJcWanBWCgnUUxPQ9tQrGKnt0SqsuVLc2tDOeTDcbq9ERYRvwwcC28Et71jmvcdTvajEaJlrEHJL01Fz+etbBUugljXGEt0Wm+fXWMn90eNuEUARNIWFDAg3mUYlZ/fll5IRwnYMf5ADos89FNUb5xWYLP6Up9ceJ0/U4UbAAoW0EVhA4ICqX7BSNJF9YSk2uxQNTopnQ93r609Fbjr47ebfBXTzOOVw2gbMBKAVABC8oK9iGIAhcSMKFbAWBZr/fLVfLYb8KW6f+EBwaLh/NhXiHKH67zziOMP7qX8Q0rGI8k2APjWowWASAq6VzzRgJPaQxUEm/KEhW/tV8YARlmuc2YhREBHPxYqBU0xp5Lauxij0hnz9iU2a8z9gLeCIzXoVk3IzeCCzR+bQ1k2oCmoWWXNEdD2qhCZAx/BMDEC1DGNmORYXZbPKE9On9W8oOVCxN/s2lZnN97e4wf2RjlD9wd4Y/eA4XJZ04P74jws9si/IFtEY5oLvo9t6+K8/VLEv934ezkd0NR/WhtuxFBgR0S6GoQANK+wiyMNyoCpe17kRL3owoOiX2yHMc3pGtg7bEok1hMamQwXd08xViU0o0rWGl88yqDH9lq8HP7DX79AcbffYzxLzxhBVK+cdFa2wZgweLhEwtpwdJi//sXGceQPbjFGLB9cjvj29YyvmQB+zXKXtNkNn9MEwugLxrBGHhH1mv/pDJCy56qrCnT7ftk4Ch8Yl8WTDmaig3Agbcuea5qZi5fqHxIOjJByAGSdKwAyy1dnFd+j7ztOiJfrjZH5YTObbTTMOoE7paYm4a00Y3pQHWrMbW6zZhmfipUOcFoB9TIi4gjlrIHbAI8fJrLYWSWIqQFVy78rqJAUdho+g1KBaN8jwXvF5Luy/qtURFaq9SZK75VpifhN8fvjd8a76SoaUuHGiYbc9qnG+uwkh3e9wh44ynjyXDCON0ZM45OjRp7J3YaG2vajE6sT4sX/MDiod0H8PAd7T8E87LdEqIsOMoOlQyhEzyV8sFot6YyjFjVO/PiDflHLeqHvanVVV9YMxrEd6xTMtJ8jx7eGDQjWB6cEawIWp/iO91GPktdAXEsZJ23B9Q0o9F1G99puqcSvxfdR1U4j/lbN3TV4XerCHYFyoNdAVRkQ+u6gqjEBtfOaEGFBqHCHFLb1YhZKgA4u95PxhV3/u+9LwdfTV1BcGjCaCY6/N+bWbShnQsU5YQ/jO4T+2UVSqd5xDbN44Gkdp9jW7iL9JhuS/VM9LmpVL8d3Xejov/9TSi0M4P6Lf8f7NoRpzF4mkUAAAAASUVORK5CYII=" alt="Grupo PJC">
+    </div>
+    <div class="titulo">
+      <h1>BI de Operações</h1>
+      <p>Relação de operação — visão consolidada dos gerentes</p>
+    </div>
+    <div class="carimbo">
+      <a class="btn-menu" href="/" title="Voltar ao início">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        <span>Início</span>
+      </a>
+      <button id="btn-atualizar" class="btn-atualizar" title="Baixa a planilha nova e recalcula o painel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+        </svg>
+        <span>Atualizar dados</span>
+      </button>
+      <div>Dados de <b id="carimbo-data">—</b></div>
+      <div id="carimbo-linhas">—</div>
+    </div>
+  </div>
+</header>
+
+<nav class="abas"><div class="wrap" id="abas"></div></nav>
+
+<main>
+  <div class="filtros" id="filtros"></div>
+  <div id="conteudo"></div>
+</main>
+
+<div id="modal-atu" class="modal-atu oculto">
+  <div class="cartao-atu">
+    <h2>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      <span id="titulo-atu">Atualizando o BI</span>
+    </h2>
+    <p class="sub-atu">Primeiro baixo a planilha nova, depois recalculo o painel. Não feche esta aba.</p>
+
+    <div id="corpo-atu">
+      <div class="etapas-atu">
+        <div class="etapa-atu" data-etapa="download"><div class="bola">1</div><div class="rot-atu">Base de dados<br>(baixar planilha)</div></div>
+        <div class="etapa-atu" data-etapa="bi"><div class="bola">2</div><div class="rot-atu">Painel<br>(recalcular BI)</div></div>
+      </div>
+      <div class="pct-atu" id="pct-atu">0%</div>
+      <div class="barra-atu"><div class="preench-atu" id="preench-atu"></div></div>
+      <div class="msg-atu" id="msg-atu">Preparando…</div>
+      <div class="log-atu" id="log-atu"></div>
+    </div>
+
+    <div class="acoes-atu" id="acoes-atu"></div>
+  </div>
+</div>
+
+<div id="dica" role="tooltip"></div>
+
+<script>
+/* Carrega os dados com um carimbo de tempo na URL: o arquivo tem sempre o mesmo
+   nome, e sem isso o navegador serviria a versao guardada apos uma atualizacao. */
+document.write('<scr' + 'ipt src="dados_bi.js?t=' + Date.now() + '"><\/scr' + 'ipt>');
+</script>
+<script>
+"use strict";
+(function(){
+
+const D = window.DADOS_BI;
+if(!D){ document.getElementById("conteudo").innerHTML =
+  '<div class="vazio-aviso">Não encontrei <code>dados_bi.js</code>.<br>Rode <b>ATUALIZAR_BI_OPERACOES.bat</b> para gerar os dados.</div>';
+  return; }
+
+const CORES   = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+const FUNIL_C = ["--f1","--f2","--f3","--f4","--f5"];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* Rótulos amigáveis para os status canônicos. */
+const ROT = {
+  "CADASTRO":"Cadastro",
+  "ANALISE DE CREDITO":"Análise de crédito",
+  "COMITE":"Comitê",
+  "APROVACAO":"Aprovação",
+  "ASSINATURA DE CONTRATO":"Assinatura de contrato",
+  "APROVADO":"Aprovado",
+  "REPROVADO":"Reprovado"
+};
+
+/* A aba METAS guarda o nome do gerente em caixa alta e sem acento ("JOAO PULLIG"),
+   enquanto as operações trazem "João Pullig". Em vez de um mapa fixo — que
+   envelhece a cada troca de equipe — acho o gerente comparando o nome normalizado. */
+const semAcento = s => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().trim();
+
+function gerenteDaMeta(nomeMeta){
+  const alvo = semAcento(nomeMeta);
+  const nomes = [...new Set(OPS.map(o=>o.gerente))];
+  return nomes.find(g => semAcento(g) === alvo) || null;
+}
+
+/* ---------- formatação ---------- */
+const fmtBRL = v => v==null ? "—" : "R$ " + Math.round(v).toLocaleString("pt-BR");
+const fmtCurto = v => {
+  if(v==null) return "—";
+  const a = Math.abs(v);
+  if(a >= 1e9) return "R$ " + (v/1e9).toLocaleString("pt-BR",{maximumFractionDigits:1}) + " bi";
+  if(a >= 1e6) return "R$ " + (v/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1}) + " mi";
+  if(a >= 1e3) return "R$ " + (v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0}) + " mil";
+  return "R$ " + Math.round(v).toLocaleString("pt-BR");
+};
+const fmtPct = (n,d) => !d ? "—" : (100*n/d).toLocaleString("pt-BR",{maximumFractionDigits:1}) + "%";
+
+/* Valores em MILHARES, como a diretoria lê: R$ 144.364.000 vira "R$ 144.364 M".
+   Mantém a precisão até o milhar (o que "R$ 144,4 mi" perderia) sem encher a
+   tela com centena, dezena e unidade, que não mudam decisão nenhuma.
+   Usado nos cartões da Visão geral e nas colunas de valor da tabela. */
+const fmtPleno = v => {
+  if(v == null) return "—";
+  if(v === 0) return "R$ 0 M";
+  const milhares = Math.round(v / 1000);
+  /* Abaixo de R$ 500 o arredondamento zeraria o valor: mostra o número cheio
+     para não sumir com um dado que existe. */
+  if(milhares === 0) return "R$ " + Math.round(v).toLocaleString("pt-BR");
+  return "R$ " + milhares.toLocaleString("pt-BR") + " M";
+};
+const fmtData = iso => { if(!iso) return "—"; const [a,m,d]=iso.split("-"); return `${d}/${m}/${a}`; };
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const hoje = new Date();
+const diasDesde = iso => iso ? Math.floor((hoje - new Date(iso+"T00:00:00"))/864e5) : null;
+
+/* ---------- estado ----------
+   Cada filtro é um conjunto. Conjunto vazio significa "todos" — assim o
+   painel abre mostrando tudo, sem precisar marcar 12 caixas. */
+const est = {
+  aba: "geral",
+  gerente: new Set(), status: new Set(), instituicao: new Set(), operacao: new Set(),
+  fluxo: new Set(),
+  busca: "", historico: false,
+  pagina: 1, ordCol: "valor", ordDir: -1,
+  /* gráfico mensal Receita × Meta: quais gerentes e quais séries mostrar */
+  mensalGer: new Set(), mensalMeta: true, mensalReal: true
+};
+
+/* Definição dos cinco filtros de múltipla escolha. FLUXO é a coluna K das
+   abas dos gerentes (Não enviado, Pré-análise, Enviado...); linha com o campo
+   em branco entra como "(não informado)" para continuar filtrável. */
+const CAMPOS = [
+  {id:"gerente",     rot:"Gerente",           campo:o=>o.gerente},
+  {id:"status",      rot:"Status",            campo:o=>o.status,      rotular:v=>ROT[v]||v},
+  {id:"instituicao", rot:"Instituição",       campo:o=>o.instituicao},
+  {id:"operacao",    rot:"Tipo de operação",  campo:o=>o.operacao},
+  {id:"fluxo",       rot:"Fluxo",             campo:o=>o.fluxo || "(não informado)"}
+];
+
+/* Operação sem instituição não é operação sem importância: ela tem volume e
+   precisa aparecer nos filtros e no ranking. Recebe rótulo próprio na entrada,
+   assim todo o painel a trata como qualquer outro parceiro. */
+const SEM_INST = "NÃO ATRIBUÍDO";
+const OPS = D.operacoes.map(o =>
+  (o.instituicao && String(o.instituicao).trim())
+    ? o
+    : Object.assign({}, o, { instituicao: SEM_INST, semInstituicao: true }));
+
+function filtrar(){
+  const b = est.busca.trim().toLowerCase();
+  return OPS.filter(o => {
+    if(!est.historico && o.historico) return false;
+    for(const c of CAMPOS){
+      const sel = est[c.id];
+      if(sel.size && !sel.has(c.campo(o))) return false;
+    }
+    if(b && !(o.cliente.toLowerCase().includes(b) || (o.obs||"").toLowerCase().includes(b))) return false;
+    return true;
+  });
+}
+
+/* Opções de um campo, com a contagem que cada uma traria — a contagem
+   respeita os OUTROS filtros ativos, para o número não mentir. */
+function opcoesDe(c){
+  const b = est.busca.trim().toLowerCase();
+  const base = OPS.filter(o => {
+    if(!est.historico && o.historico) return false;
+    for(const outro of CAMPOS){
+      if(outro.id === c.id) continue;
+      const sel = est[outro.id];
+      if(sel.size && !sel.has(outro.campo(o))) return false;
+    }
+    if(b && !(o.cliente.toLowerCase().includes(b) || (o.obs||"").toLowerCase().includes(b))) return false;
+    return true;
+  });
+  const cont = new Map();
+  base.forEach(o => { const v = c.campo(o); if(v) cont.set(v, (cont.get(v)||0)+1); });
+  /* Opções já marcadas continuam na lista mesmo com zero, senão o usuário
+     não consegue desmarcar o que acabou de marcar. */
+  est[c.id].forEach(v => { if(!cont.has(v)) cont.set(v, 0); });
+  return [...cont.entries()].sort((a,b2) => b2[1]-a[1] || a[0].localeCompare(b2[0],"pt-BR"));
+}
+
+/* Volume desduplicado: o mesmo negócio ofertado a N instituições vira N linhas. */
+const somaValor   = ops => ops.filter(o=>o.unico).reduce((s,o)=>s+(o.valor||0),0);
+const somaLinhas  = ops => ops.reduce((s,o)=>s+(o.valor||0),0);
+const somaReceita = ops => ops.reduce((s,o)=>s+(o.receita||0),0);
+const negocios    = ops => ops.filter(o=>o.unico).length;
+
+/* ---------- tooltip ---------- */
+const dica = document.getElementById("dica");
+function ligarDica(el, html){
+  el.addEventListener("mouseenter", e => { dica.innerHTML = html; dica.style.opacity = "1"; mover(e); });
+  el.addEventListener("mousemove", mover);
+  el.addEventListener("mouseleave", () => { dica.style.opacity = "0"; });
+}
+function mover(e){
+  const r = dica.getBoundingClientRect();
+  let x = e.clientX + 15, y = e.clientY + 15;
+  if(x + r.width  > innerWidth  - 10) x = e.clientX - r.width  - 15;
+  if(y + r.height > innerHeight - 10) y = e.clientY - r.height - 15;
+  dica.style.left = x + "px"; dica.style.top = y + "px";
+}
+
+/* ---------- componente: barras horizontais ---------- */
+function barras(itens, opc){
+  opc = opc || {};
+  if(!itens.length) return '<div class="vazio-aviso">Nada a exibir com estes filtros.</div>';
+  const max = Math.max(...itens.map(i=>i.valor), 1);
+  const div = document.createElement("div");
+  div.className = "barras";
+  /* Uma medida = uma cor. Só quem passa cor explícita (séries de verdade,
+     como meta x realizado) foge do slot 1 — colorir cada barra de um jeito
+     não acrescenta informação, o rótulo já identifica a linha. */
+  itens.forEach((it,i) => {
+    const cor = it.cor || css("--s1");
+    const l = document.createElement("div");
+    l.className = "linha-b";
+    l.innerHTML =
+      `<div class="rot" title="${esc(it.rotulo)}">${esc(it.rotulo)}</div>`+
+      `<div class="trilha"><div class="barra" style="width:${(100*it.valor/max).toFixed(2)}%;background:${cor}"></div></div>`+
+      `<div class="num">${opc.fmt ? opc.fmt(it.valor) : fmtCurto(it.valor)}`+
+        (it.pe ? `<small>${esc(it.pe)}</small>` : "")+`</div>`;
+    if(it.dica) ligarDica(l, it.dica);
+    div.appendChild(l);
+  });
+  return div.outerHTML;
+}
+
+/* ---------- ABA: visão geral ---------- */
+function abaGeral(ops){
+  const emAndamento = ops.filter(o => D.etapasFunil.includes(o.status));
+  const aprovados   = ops.filter(o => o.status === "APROVADO");
+  const reprovados  = ops.filter(o => o.status === "REPROVADO");
+  const semStatus   = ops.filter(o => !o.status);
+
+  const volAndamento = somaValor(emAndamento);
+  const volAprovado  = somaValor(aprovados);
+  const recPotencial = somaReceita(emAndamento);
+  const recAprovada  = somaReceita(aprovados);
+
+  /* Cartões com o valor por extenso (fmtPleno): "R$ 92,9 mi" arredonda demais
+     para um número que a diretoria compara com a planilha. */
+  const kpis = [
+    { rot:"Volume em negociação", val:fmtPleno(volAndamento),
+      pe:`${negocios(emAndamento)} negócios em andamento` },
+    { rot:"Volume aprovado", val:fmtPleno(volAprovado),
+      pe:`${negocios(aprovados)} negócios aprovados` },
+    { rot:"Receita potencial", val:fmtPleno(recPotencial),
+      pe:"se tudo em andamento fechar" },
+    { rot:"Receita aprovada", val:fmtPleno(recAprovada),
+      pe:"operações já com status Aprovado" },
+    { rot:"Taxa de aprovação", val:fmtPct(aprovados.length, aprovados.length+reprovados.length),
+      pe:`${aprovados.length} aprovadas · ${reprovados.length} reprovadas`,
+      alerta:(aprovados.length+reprovados.length)===0 }
+  ];
+
+  const classeVal = v => v.length > 15 ? " longo" : (v.length > 12 ? " medio" : "");
+  let h = '<div class="grid kpis">' + kpis.map(k =>
+    `<div class="kpi${k.alerta?" alerta":""}"><div class="rot">${k.rot}</div>`+
+    `<div class="val${classeVal(String(k.val))}">${k.val}</div>`+
+    `<div class="pe">${esc(k.pe)}</div></div>`).join("") + '</div>';
+
+  if(semStatus.length){
+    h += `<div class="nota" style="margin-bottom:18px"><h3>${semStatus.length} operações sem status preenchido</h3>`+
+         `<p>Elas entram nos totais de volume, mas ficam fora do funil e da taxa de aprovação — `+
+         `não dá para saber em que etapa estão. Veja a aba <b>Notas</b>.</p></div>`;
+  }
+
+  h += '<div class="grid duas">';
+
+  /* funil */
+  h += '<div class="painel"><h2>Funil — onde as operações estão paradas</h2>'+
+       '<p class="desc">Volume e quantidade por etapa. A seta mostra quanto passa de uma etapa para a seguinte.</p>'+
+       funil(ops) + '</div>';
+
+  /* ranking de gerentes */
+  const porGer = agrupar(ops, o=>o.gerente);
+  const itensGer = [...porGer.entries()]
+    .map(([g,lista]) => ({
+      rotulo:g, valor:somaValor(lista),
+      pe:`${negocios(lista)} negócios`,
+      dica:`<b>${esc(g)}</b><br><span class="l">Volume:</span> ${fmtBRL(somaValor(lista))}`+
+           `<br><span class="l">Negócios:</span> ${negocios(lista)}`+
+           `<br><span class="l">Receita:</span> ${somaReceita(lista) ? fmtBRL(somaReceita(lista)) : "sem dado de fee"}`
+    }))
+    .sort((a,b)=>b.valor-a.valor);
+  h += '<div class="painel"><h2>Volume por gerente</h2>'+
+       '<p class="desc">Soma dos negócios únicos — a mesma operação ofertada a várias instituições conta uma vez.</p>'+
+       barras(itensGer) + '</div>';
+
+  /* instituições */
+  const porInst = agrupar(ops.filter(o=>o.instituicao), o=>o.instituicao);
+  const itensInst = [...porInst.entries()]
+    .map(([n,lista]) => ({ rotulo:n, valor:somaLinhas(lista), pe:`${lista.length} operações`,
+      dica:`<b>${esc(n)}</b><br><span class="l">Volume ofertado:</span> ${fmtBRL(somaLinhas(lista))}<br><span class="l">Operações:</span> ${lista.length}` }))
+    .sort((a,b)=>b.valor-a.valor).slice(0,10);
+  h += '<div class="painel"><h2>Concentração por instituição</h2>'+
+       '<p class="desc">Top 10 por volume ofertado. Aqui a mesma operação conta em cada instituição a que foi enviada — é isso que mede a exposição a cada parceiro.</p>'+
+       barras(itensInst) + '</div>';
+
+  /* tipo de operação */
+  const porOp = agrupar(ops.filter(o=>o.operacao), o=>o.operacao);
+  const itensOp = [...porOp.entries()]
+    .map(([n,lista]) => ({ rotulo:n, valor:somaValor(lista), pe:`${negocios(lista)} negócios`,
+      dica:`<b>${esc(n)}</b><br><span class="l">Volume:</span> ${fmtBRL(somaValor(lista))}<br><span class="l">Negócios:</span> ${negocios(lista)}` }))
+    .sort((a,b)=>b.valor-a.valor);
+  h += '<div class="painel"><h2>Tipo de operação</h2>'+
+       '<p class="desc">Grafias diferentes do mesmo produto foram unificadas.</p>'+
+       barras(itensOp) + '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+function agrupar(lista, chave){
+  const m = new Map();
+  lista.forEach(o => { const k = chave(o); if(!m.has(k)) m.set(k,[]); m.get(k).push(o); });
+  return m;
+}
+
+/* ---------- funil ---------- */
+function funil(ops){
+  const etapas = D.etapasFunil.map((s,i) => {
+    const lista = ops.filter(o => o.status === s);
+    return { status:s, rot:ROT[s]||s, lista, valor:somaValor(lista), qtd:negocios(lista),
+             cor:css(FUNIL_C[i]) };
+  });
+  const maxV = Math.max(...etapas.map(e=>e.valor), 1);
+
+  let h = '<div class="funil">';
+  etapas.forEach((e,i) => {
+    h += `<div class="etapa" data-et="${i}">`+
+         `<div class="fundo" style="width:${(100*e.valor/maxV).toFixed(2)}%;background:${e.cor}"></div>`+
+         `<div class="esq"><div class="nome">${e.rot}</div>`+
+         `<div class="qtd">${e.qtd} ${e.qtd===1?"negócio":"negócios"}</div></div>`+
+         `<div class="dir"><div class="v">${fmtCurto(e.valor)}</div></div></div>`;
+    if(i < etapas.length-1){
+      const prox = etapas[i+1];
+      const taxa = e.qtd ? fmtPct(prox.qtd, e.qtd) : "—";
+      h += `<div class="seta">↓ passam para a próxima: <b>${taxa}</b></div>`;
+    }
+  });
+  h += '</div>';
+
+  const apr = ops.filter(o=>o.status==="APROVADO");
+  const rep = ops.filter(o=>o.status==="REPROVADO");
+  h += '<div class="desfechos">'+
+    `<div class="desfecho"><div class="cab"><span class="ico" style="background:${css("--good")}">✓</span>Aprovado</div>`+
+    `<div class="v">${fmtCurto(somaValor(apr))}</div><div class="p">${negocios(apr)} negócios · ${fmtPct(apr.length, apr.length+rep.length)} dos desfechos</div></div>`+
+    `<div class="desfecho"><div class="cab"><span class="ico" style="background:${css("--critical")};color:#fff">✕</span>Reprovado</div>`+
+    `<div class="v">${fmtCurto(somaValor(rep))}</div><div class="p">${negocios(rep)} negócios · ${fmtPct(rep.length, apr.length+rep.length)} dos desfechos</div></div>`+
+  '</div>';
+  return h;
+}
+
+/* ---------- ABA: funil detalhado ---------- */
+function abaFunil(ops){
+  let h = '<div class="painel" style="margin-bottom:16px"><h2>Funil consolidado</h2>'+
+          '<p class="desc">Todas as operações filtradas, etapa a etapa.</p>'+ funil(ops) +'</div>';
+
+  /* parados há muito tempo */
+  const parados = ops
+    .filter(o => D.etapasFunil.includes(o.status) && o.data)
+    .map(o => ({o, d:diasDesde(o.data)}))
+    .filter(x => x.d != null && x.d > 15)
+    .sort((a,b)=>b.d-a.d);
+
+  h += '<div class="painel"><h2>Operações sem movimento</h2>'+
+       '<p class="desc">Em andamento e com a data de atualização há mais de 15 dias. Quanto mais no topo, mais tempo parada.</p>';
+  if(!parados.length){
+    h += '<div class="vazio-aviso">Nenhuma operação em andamento parada há mais de 15 dias.</div>';
+  } else {
+    h += '<div class="rolagem"><table><thead><tr>'+
+         '<th>Cliente</th><th>Gerente</th><th>Etapa</th><th>Instituição</th>'+
+         '<th class="n">Valor</th><th class="n">Parada há</th><th>Observação</th>'+
+         '</tr></thead><tbody>';
+    parados.slice(0,60).forEach(({o,d}) => {
+      const cor = d > 60 ? css("--critical") : d > 30 ? css("--warning") : css("--muted");
+      h += `<tr><td class="forte">${esc(o.cliente)}${o.historico?'<span class="hist-mark">hist</span>':""}</td>`+
+           `<td>${esc(o.gerente)}</td><td>${esc(ROT[o.status]||o.status)}</td>`+
+           `<td>${o.instituicao?esc(o.instituicao):'<span class="vazio-cel">—</span>'}</td>`+
+           `<td class="n">${o.valor?fmtPleno(o.valor):'<span class="vazio-cel">—</span>'}</td>`+
+           `<td class="n" style="color:${cor};font-weight:600">${d} dias</td>`+
+           `<td style="max-width:280px">${o.obs?esc(o.obs):'<span class="vazio-cel">—</span>'}</td></tr>`;
+    });
+    h += '</tbody></table></div>';
+    if(parados.length > 60) h += `<div class="paginacao">mostrando 60 de ${parados.length}</div>`;
+  }
+  h += '</div>';
+  return h;
+}
+
+/* ---------- ABA: gerentes ---------- */
+function abaGerentes(ops){
+  const porGer = agrupar(ops, o=>o.gerente);
+  const linhas = [...porGer.entries()].map(([g,lista]) => {
+    const apr = lista.filter(o=>o.status==="APROVADO");
+    const rep = lista.filter(o=>o.status==="REPROVADO");
+    const and = lista.filter(o=>D.etapasFunil.includes(o.status));
+    /* O gerador escreve total/comFee; arquivos antigos traziam linhas/comReceita.
+       Aceito os dois para o painel nao depender da versao do dados_bi.js. */
+    const cob = D.cobertura[g] || {};
+    const comFee = (cob.comFee != null) ? cob.comFee : cob.comReceita;
+    return {
+      gerente:g, historico:lista[0].historico,
+      negocios:negocios(lista), linhas:lista.length,
+      volume:somaValor(lista), volAndamento:somaValor(and), volAprovado:somaValor(apr),
+      receita:somaReceita(lista),
+      semFee: comFee === 0,
+      apr:apr.length, rep:rep.length,
+      taxa: (apr.length+rep.length) ? apr.length/(apr.length+rep.length) : null
+    };
+  }).sort((a,b)=>b.volume-a.volume);
+
+  let h = '<div class="painel" style="margin-bottom:16px"><h2>Comparativo de gerentes</h2>'+
+    '<p class="desc">Clique no cabeçalho para reordenar. "Negócios" desconta a mesma operação enviada a várias instituições; "linhas" é o total bruto da planilha.</p>'+
+    '<div class="rolagem"><table><thead><tr>'+
+    '<th>Gerente</th><th class="n">Negócios</th><th class="n">Linhas</th>'+
+    '<th class="n">Volume total</th><th class="n">Em andamento</th><th class="n">Aprovado</th>'+
+    '<th class="n">Receita</th><th class="n">Aprov.</th><th class="n">Reprov.</th><th class="n">Taxa</th>'+
+    '</tr></thead><tbody>';
+  linhas.forEach(l => {
+    h += `<tr><td class="forte">${esc(l.gerente)}</td>`+
+      `<td class="n">${l.negocios}</td><td class="n" style="color:var(--muted)">${l.linhas}</td>`+
+      `<td class="n">${fmtCurto(l.volume)}</td><td class="n">${fmtCurto(l.volAndamento)}</td>`+
+      `<td class="n">${fmtCurto(l.volAprovado)}</td>`+
+      `<td class="n">${l.semFee ? '<span class="sem-dado">sem dado de fee</span>' : fmtCurto(l.receita)}</td>`+
+      `<td class="n" style="color:${css("--good")}">${l.apr}</td>`+
+      `<td class="n" style="color:${css("--critical")}">${l.rep}</td>`+
+      `<td class="n">${l.taxa==null ? '<span class="vazio-cel">—</span>' : (100*l.taxa).toFixed(0)+"%"}</td></tr>`;
+  });
+  h += '</tbody></table></div></div>';
+
+  /* receita x meta */
+  h += secaoMetas(ops);
+  /* e o mesmo comparativo aberto mes a mes */
+  h += secaoMensal(ops);
+  return h;
+}
+
+/* ---------- gráfico mensal: Receita × Meta por gerente ---------- */
+
+/* Receita aprovada por gerente e mês. Usa SÓ a DATA FECHAMENTO: é ela que diz
+   quando o negócio entrou de fato. A coluna Atualização registra a última
+   mexida na linha e jogaria a receita no mês errado. */
+function receitaMensalPorGerente(ops){
+  const mapa = {};
+  ops.forEach(o => {
+    if(o.status !== "APROVADO" || !o.receita || !o.dataFechamento) return;
+    const mes = parseInt(o.dataFechamento.slice(5,7), 10) - 1;
+    if(isNaN(mes) || mes < 0 || mes > 11) return;
+    (mapa[o.gerente] = mapa[o.gerente] || new Array(12).fill(0))[mes] += o.receita;
+  });
+  return mapa;
+}
+
+/* Meta mensal por gerente, casando o nome da aba METAS com o das operações. */
+function metaMensalPorGerente(){
+  const mapa = {};
+  Object.keys(D.metas || {}).forEach(nm => {
+    const g = gerenteDaMeta(nm);
+    const m = (D.metas[nm] || {}).meta;
+    if(g && Array.isArray(m)) mapa[g] = m.map(v => v || 0);
+  });
+  return mapa;
+}
+
+function secaoMensal(ops){
+  const metas    = metaMensalPorGerente();
+  const realizado = receitaMensalPorGerente(ops);
+
+  /* Entram no gráfico os gerentes com meta ou com receita lançada. */
+  const candidatos = [...new Set([...Object.keys(metas), ...Object.keys(realizado)])].sort(
+    (a,b) => a.localeCompare(b,"pt-BR"));
+
+  let h = '<div class="painel gmensal"><h2>Receita × meta mês a mês</h2>'+
+    '<p class="desc">Compara o que cada gerente trouxe em cada mês com a meta daquele mês. '+
+    'A meta aparece tracejada e o realizado em linha cheia, na cor do gerente.</p>';
+
+  if(!candidatos.length){
+    return h + '<div class="vazio-aviso">Nenhum gerente com meta cadastrada ou receita lançada.</div></div>';
+  }
+
+  /* Primeira vez: mostra todo mundo. */
+  if(!est.mensalGer.size) candidatos.forEach(g => est.mensalGer.add(g));
+  const sel = candidatos.filter(g => est.mensalGer.has(g));
+
+  const cor = g => css(CORES[candidatos.indexOf(g) % CORES.length]);
+
+  /* ---- controles ---- */
+  h += '<div class="ctrl">'+
+    '<div class="campo"><label>Gerentes no gráfico</label>'+
+    `<div class="multi" data-campo="mensalGer">`+
+      `<button type="button" class="multi-btn">`+
+      (sel.length === candidatos.length ? "Todos"
+        : sel.length === 1 ? esc(sel[0])
+        : sel.length ? `${sel.length} selecionados` : "Nenhum")+
+      `<span class="cae">▼</span></button>`+
+      `<div class="multi-pop oculto"><div class="multi-lista">`+
+      candidatos.map(g =>
+        `<label class="opc"><input type="checkbox" data-ger="${esc(g)}"`+
+        `${est.mensalGer.has(g)?" checked":""}><span style="border-left:3px solid ${cor(g)};padding-left:7px">`+
+        `${esc(g)}</span></label>`).join("")+
+      `</div></div>`+
+    '</div></div>'+
+    '<div class="series">'+
+      `<button type="button" data-serie="meta" aria-pressed="${est.mensalMeta}">`+
+        `<span class="amostra" style="border-top-style:dashed;border-top-color:var(--muted)"></span>Meta</button>`+
+      `<button type="button" data-serie="real" aria-pressed="${est.mensalReal}">`+
+        `<span class="amostra" style="border-top-color:var(--gold)"></span>Realizado</button>`+
+    '</div>'+
+  '</div>';
+
+  /* ---- séries a desenhar ---- */
+  const series = [];
+  sel.forEach(g => {
+    if(est.mensalMeta && metas[g])     series.push({ger:g, tipo:"meta", vals:metas[g],     cor:cor(g)});
+    if(est.mensalReal)                 series.push({ger:g, tipo:"real", vals:realizado[g] || new Array(12).fill(0), cor:cor(g)});
+  });
+
+  h += '<div id="gmensal-plot">' + desenhoMensal(ops, sel, series, cor) + '</div>';
+  return h + '</div>';
+}
+
+/* O tooltip do painel funciona por listener em cada elemento, então os pontos
+   do SVG precisam ser ligados depois de desenhados (a cada redesenho). */
+function ligarDicasMensal(){
+  document.querySelectorAll("#gmensal-plot circle.ponto[data-dica]").forEach(c => {
+    ligarDica(c, c.dataset.dica);
+  });
+}
+
+/* Redesenha apenas o gráfico, preservando os controles como estão — inclusive
+   a lista de gerentes aberta, para dar conta de marcar vários de uma vez. */
+function redesenharMensal(){
+  const alvo = document.getElementById("gmensal-plot");
+  if(!alvo) return;
+  const ops = filtrar();
+  const metas = metaMensalPorGerente();
+  const real  = receitaMensalPorGerente(ops);
+  const cands = [...new Set([...Object.keys(metas), ...Object.keys(real)])].sort(
+    (a,b) => a.localeCompare(b,"pt-BR"));
+  const sel = cands.filter(g => est.mensalGer.has(g));
+  const cor = g => css(CORES[cands.indexOf(g) % CORES.length]);
+  const series = [];
+  sel.forEach(g => {
+    if(est.mensalMeta && metas[g]) series.push({ger:g, tipo:"meta", vals:metas[g], cor:cor(g)});
+    if(est.mensalReal)             series.push({ger:g, tipo:"real", vals:real[g] || new Array(12).fill(0), cor:cor(g)});
+  });
+  alvo.innerHTML = desenhoMensal(ops, sel, series, cor);
+  ligarDicasMensal();
+  /* o rótulo do seletor acompanha a escolha, sem recriar a lista */
+  const btn = document.querySelector('.multi[data-campo="mensalGer"] .multi-btn');
+  if(btn) btn.innerHTML = (sel.length === cands.length ? "Todos"
+      : sel.length === 1 ? esc(sel[0])
+      : sel.length ? sel.length + " selecionados" : "Nenhum") + '<span class="cae">▼</span>';
+}
+
+/* Só o desenho: SVG, legenda e aviso. Fica separado dos controles para que
+   marcar um gerente redesenhe o gráfico sem recriar (e fechar) a lista. */
+function desenhoMensal(ops, sel, series, cor){
+  let h = "";
+  if(!series.length){
+    return '<div class="vazio-aviso">Escolha ao menos um gerente e uma das séries.</div>';
+  }
+
+  /* recalcula aqui para a função não depender do escopo de quem a chamou */
+  const temReceita = Object.keys(receitaMensalPorGerente(ops)).length > 0;
+  const maximo = Math.max(1, ...series.flatMap(s => s.vals));
+
+  /* ---- geometria ---- */
+  const L = 1000, A = 300, mE = 78, mD = 16, mT = 14, mB = 34;
+  const px = i => mE + (i * (L - mE - mD)) / 11;
+  const py = v => A - mB - (v / maximo) * (A - mT - mB);
+
+  let g = `<svg viewBox="0 0 ${L} ${A}" role="img" aria-label="Receita e meta mês a mês">`;
+
+  /* grade e rótulos do eixo vertical */
+  for(let k = 0; k <= 4; k++){
+    const v = (maximo * k) / 4, y = py(v);
+    g += `<line class="grade" x1="${mE}" y1="${y}" x2="${L - mD}" y2="${y}"/>`+
+         `<text class="rotEixo" x="${mE - 9}" y="${y + 3.5}" text-anchor="end">${fmtPleno(v)}</text>`;
+  }
+  g += `<line class="eixo" x1="${mE}" y1="${mT}" x2="${mE}" y2="${A - mB}"/>`+
+       `<line class="eixo" x1="${mE}" y1="${A - mB}" x2="${L - mD}" y2="${A - mB}"/>`;
+
+  /* meses */
+  D.meses.forEach((m, i) => {
+    g += `<text class="rotEixo" x="${px(i)}" y="${A - mB + 17}" text-anchor="middle">`+
+         `${m.slice(0,3)}</text>`;
+  });
+
+  /* linhas: meta tracejada, realizado cheia */
+  series.forEach(s => {
+    const d = s.vals.map((v,i) => `${i?"L":"M"}${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(" ");
+    g += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="${s.tipo==="meta"?2:2.6}"`+
+         `${s.tipo==="meta"?' stroke-dasharray="6 5" opacity=".75"':''} stroke-linejoin="round"/>`;
+    s.vals.forEach((v,i) => {
+      g += `<circle class="ponto" cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="3.6"`+
+           ` fill="${s.tipo==="meta"?"var(--surface)":s.cor}" stroke="${s.cor}" stroke-width="2"`+
+           ` data-dica="<b>${esc(s.ger)}</b><br>${D.meses[i].toLowerCase()} — `+
+           `${s.tipo==="meta"?"meta":"realizado"}<br>${fmtPleno(v)}"/>`;
+    });
+  });
+  g += '</svg>';
+  h += g;
+
+  /* ---- legenda ---- */
+  h += '<div class="legenda">'+
+    sel.map(x => `<span><i style="border-top-color:${cor(x)}"></i>${esc(x)}</span>`).join("")+
+    `<span><i style="border-top-style:dashed;border-top-color:var(--muted)"></i>tracejado = meta</span>`+
+    '</div>';
+
+  /* ---- aviso quando falta a data de fechamento ---- */
+  const semData = ops.filter(o => o.status === "APROVADO" && o.receita && !o.dataFechamento).length;
+  if(semData){
+    h += `<div class="nota" style="margin:16px 0 0"><h3>${semData} operações aprovadas sem data de fechamento `+
+         `<span class="selo">atenção</span></h3>`+
+         `<p>A receita delas <b>não aparece em nenhum mês</b> deste gráfico — sem a data não há como `+
+         `saber onde lançar. Preencha a coluna <b>DATA FECHAMENTO</b> na planilha ao marcar o status `+
+         `como Aprovado. O total do ano na seção acima continua contando todas.</p></div>`;
+  } else if(!temReceita){
+    h += '<div class="nota" style="margin:16px 0 0"><h3>Nenhuma receita lançada ainda</h3>'+
+         '<p>As linhas de realizado ficam no zero até haver operação aprovada com '+
+         '<b>data de fechamento</b> preenchida.</p></div>';
+  }
+
+  return h;
+}
+
+function secaoMetas(ops){
+  const nomes = Object.keys(D.metas || {});
+  let h = '<div class="painel"><h2>Receita × meta</h2>'+
+    '<p class="desc">Meta anual vinda da aba METAS da planilha. O realizado é a receita das operações com status Aprovado.</p>';
+
+  if(!nomes.length){
+    h += '<div class="vazio-aviso">Nenhuma meta cadastrada na aba METAS da planilha.</div></div>';
+    return h;
+  }
+
+  const itens = [];
+  nomes.forEach(nm => {
+    const m = D.metas[nm] || {};
+    /* Campos podem vir ausentes ou nulos conforme a versão da planilha —
+       tratar como lista vazia evita derrubar a aba inteira. */
+    const metaAno = (m.meta || []).reduce((a,b)=>a+(b||0),0);
+    const realPl  = (m.realizadoPlanilha || []).reduce((a,b)=>a+(b||0),0);
+    const alvo    = gerenteDaMeta(nm);
+    const rot     = alvo || nm;
+    const calc = somaReceita(ops.filter(o => o.gerente === alvo && o.status === "APROVADO"));
+    itens.push({rotulo:`${rot} — meta`, valor:metaAno, cor:css("--muted"),
+      dica:`<b>Meta anual</b><br>${fmtBRL(metaAno)}`});
+    itens.push({rotulo:`${rot} — realizado`, valor:calc, cor:css("--s1"),
+      pe:fmtPct(calc, metaAno)+" da meta",
+      dica:`<b>Realizado</b><br>Receita das operações com status Aprovado.<br>${fmtBRL(calc)}`});
+    /* A v3 calcula o realizado por fórmula na própria planilha; só mostro a
+       linha "digitada" quando ela existir de fato (planilhas antigas). */
+    if(realPl){
+      itens.push({rotulo:`${rot} — realizado (planilha)`, valor:realPl, cor:css("--s4"),
+        pe:fmtPct(realPl, metaAno)+" da meta",
+        dica:`<b>Realizado digitado na planilha</b><br>${fmtBRL(realPl)}`});
+    }
+  });
+
+  h += barras(itens, {fmt:fmtBRL});
+  h += '<div class="legenda">'+
+    `<span><i style="background:${css("--muted")}"></i>Meta anual</span>`+
+    `<span><i style="background:${css("--s1")}"></i>Realizado calculado pelas operações</span>`+
+    `<span><i style="background:${css("--s4")}"></i>Realizado digitado na planilha</span>`+
+    '</div>';
+
+  const comMeta = new Set(nomes.map(nm => gerenteDaMeta(nm)).filter(Boolean));
+  const semMeta = [...new Set(OPS.filter(o=>!o.historico).map(o=>o.gerente))]
+    .filter(g => !comMeta.has(g));
+  if(semMeta.length){
+    h += `<div class="nota" style="margin:16px 0 0"><h3>${semMeta.length} gerentes sem meta cadastrada</h3>`+
+         `<p>${semMeta.map(esc).join(", ")} — aparecem no painel sem barra de meta, `+
+         `porque não há meta cadastrada para eles na aba METAS da planilha.</p></div>`;
+  }
+  h += '</div>';
+  return h;
+}
+
+/* ---------- ABA: instituições ---------- */
+function abaInstituicoes(ops){
+  const porInst = agrupar(ops.filter(o=>o.instituicao), o=>o.instituicao);
+  const total = somaLinhas(ops.filter(o=>o.instituicao));
+  const linhas = [...porInst.entries()].map(([n,lista]) => {
+    const apr = lista.filter(o=>o.status==="APROVADO").length;
+    const rep = lista.filter(o=>o.status==="REPROVADO").length;
+    return { inst:n, ops:lista.length, volume:somaLinhas(lista),
+             share: total ? somaLinhas(lista)/total : 0,
+             gerentes:new Set(lista.map(o=>o.gerente)).size, apr, rep,
+             taxa:(apr+rep)?apr/(apr+rep):null };
+  }).sort((a,b)=>b.volume-a.volume);
+
+  let h = '<div class="painel" style="margin-bottom:16px"><h2>Exposição por instituição</h2>'+
+    '<p class="desc">Quanto do volume ofertado depende de cada parceiro. "% do total" mostra a concentração — número alto significa dependência de um só parceiro.</p>'+
+    '<div class="rolagem"><table><thead><tr>'+
+    '<th>Instituição</th><th class="n">Operações</th><th class="n">Volume ofertado</th>'+
+    '<th class="n">% do total</th><th class="n">Gerentes</th><th class="n">Aprov.</th>'+
+    '<th class="n">Reprov.</th><th class="n">Taxa</th></tr></thead><tbody>';
+  linhas.forEach(l => {
+    h += `<tr><td class="forte">${esc(l.inst)}</td><td class="n">${l.ops}</td>`+
+      `<td class="n">${fmtCurto(l.volume)}</td>`+
+      `<td class="n">${(100*l.share).toFixed(1)}%</td>`+
+      `<td class="n">${l.gerentes}</td>`+
+      `<td class="n" style="color:${css("--good")}">${l.apr}</td>`+
+      `<td class="n" style="color:${css("--critical")}">${l.rep}</td>`+
+      `<td class="n">${l.taxa==null?'<span class="vazio-cel">—</span>':(100*l.taxa).toFixed(0)+"%"}</td></tr>`;
+  });
+  h += '</tbody></table></div></div>';
+
+  const semInst = ops.filter(o=>o.semInstituicao).length;
+  if(semInst){
+    h += `<div class="nota"><h3>${semInst} operações sem instituição preenchida</h3>`+
+         `<p>Aparecem agrupadas como <b>${SEM_INST}</b> — entram no ranking e nos totais, `+
+         `mas não se sabe de qual parceiro dependem. Preencha a coluna Instituição na `+
+         `planilha para elas irem para o parceiro certo.</p></div>`;
+  }
+  return h;
+}
+
+/* ---------- ABA: operações ---------- */
+const POR_PAG = 40;
+const COLS = [
+  {k:"cliente",     r:"Cliente"},
+  {k:"gerente",     r:"Gerente"},
+  {k:"operacao",    r:"Operação"},
+  {k:"valor",       r:"Valor",       n:true},
+  {k:"taxa",        r:"Fee",         n:true},
+  {k:"receita",     r:"Receita",     n:true},
+  {k:"instituicao", r:"Instituição"},
+  {k:"status",      r:"Status"},
+  {k:"mandato",     r:"Mandato"},
+  {k:"data",        r:"Atualização", n:true},
+  {k:"obs",         r:"Observação"}
+];
+const COR_STATUS = {
+  "CADASTRO":"--f2","ANALISE DE CREDITO":"--f3","COMITE":"--f4",
+  "APROVACAO":"--f5","ASSINATURA DE CONTRATO":"--s7",
+  "APROVADO":"--good","REPROVADO":"--critical"
+};
+
+function abaOperacoes(ops){
+  const arr = ops.slice().sort((a,b)=>{
+    let x=a[est.ordCol], y=b[est.ordCol];
+    if(x==null && y==null) return 0;
+    if(x==null) return 1;
+    if(y==null) return -1;
+    if(typeof x === "string") return est.ordDir * x.localeCompare(y,"pt-BR");
+    return est.ordDir * (x-y);
+  });
+  const tot = Math.max(1, Math.ceil(arr.length/POR_PAG));
+  if(est.pagina > tot) est.pagina = tot;
+  const fatia = arr.slice((est.pagina-1)*POR_PAG, est.pagina*POR_PAG);
+
+  /* Subtotais somam TUDO que está no filtro, não só a página visível — é o
+     número que responde "quanto dá o que estou vendo". */
+  const totValor   = arr.reduce((a,o)=>a+(o.valor||0), 0);
+  const totReceita = arr.reduce((a,o)=>a+(o.receita||0), 0);
+  const nValor     = arr.filter(o=>o.valor).length;
+  const nReceita   = arr.filter(o=>o.receita).length;
+
+  const subtotal = COLS.map(c => {
+    if(c.k === "cliente")
+      return `<th><span class="rot">Subtotal — ${arr.length} ${arr.length===1?"operação":"operações"}</span></th>`;
+    if(c.k === "valor")
+      return `<th class="n"><span class="val">${fmtPleno(totValor)}</span>`+
+             (nValor < arr.length ? `<small style="display:block;font-weight:400;color:var(--muted);font-size:10px">${arr.length-nValor} sem valor</small>` : "")+`</th>`;
+    if(c.k === "receita")
+      return `<th class="n"><span class="val">${fmtPleno(totReceita)}</span>`+
+             (nReceita < arr.length ? `<small style="display:block;font-weight:400;color:var(--muted);font-size:10px">${arr.length-nReceita} sem receita</small>` : "")+`</th>`;
+    return "<th></th>";
+  }).join("");
+
+  let h = '<div class="painel"><h2>Todas as operações</h2>'+
+    '<p class="desc">A lista completa por trás dos números. Clique no cabeçalho para ordenar. '+
+    'Os subtotais somam todas as operações do filtro, não apenas a página exibida.</p>'+
+    '<div class="rolagem fixa"><table><thead>'+
+    `<tr class="subtotais">${subtotal}</tr>`+
+    '<tr class="titulos">'+
+    COLS.map(c => `<th class="${c.n?"n":""}" data-ord="${c.k}">${c.r}`+
+      (est.ordCol===c.k ? (est.ordDir<0?" ↓":" ↑") : "")+`</th>`).join("")+
+    '</tr></thead><tbody>';
+
+  if(!fatia.length){
+    h += `<tr><td colspan="${COLS.length}"><div class="vazio-aviso">Nenhuma operação com estes filtros.</div></td></tr>`;
+  }
+  fatia.forEach(o => {
+    const d = diasDesde(o.data);
+    h += "<tr>"+
+      `<td class="forte">${esc(o.cliente)}${o.historico?'<span class="hist-mark">hist</span>':""}`+
+        (o.dupExata?'<span class="hist-mark" style="color:var(--warning);border-color:var(--warning)" title="Linha repetida: mesmo cliente, valor e instituição">dup</span>':"")+`</td>`+
+      `<td>${esc(o.gerente)}</td>`+
+      `<td>${o.operacao?esc(o.operacao):'<span class="vazio-cel">—</span>'}</td>`+
+      `<td class="n">${o.valor?fmtPleno(o.valor):'<span class="vazio-cel">—</span>'}</td>`+
+      `<td class="n">${o.taxa?(100*o.taxa).toLocaleString("pt-BR",{maximumFractionDigits:2})+"%":'<span class="vazio-cel">—</span>'}</td>`+
+      `<td class="n">${o.receita?fmtPleno(o.receita):'<span class="vazio-cel">—</span>'}</td>`+
+      `<td>${o.instituicao?esc(o.instituicao):'<span class="vazio-cel">—</span>'}</td>`+
+      `<td>${o.status?`<span class="tag" style="background:${css(COR_STATUS[o.status]||"--surface-3")}22;color:${css(COR_STATUS[o.status]||"--ink-2")}">${esc(ROT[o.status]||o.status)}</span>`:'<span class="vazio-cel">—</span>'}</td>`+
+      `<td>${o.mandato?esc(o.mandato):'<span class="vazio-cel">—</span>'}</td>`+
+      `<td class="n" title="${o.data?fmtData(o.data):""}">${o.data?fmtData(o.data):'<span class="vazio-cel">—</span>'}`+
+        (d!=null && d>30?`<small style="display:block;color:var(--warning);font-size:10.5px">${d}d parada</small>`:"")+`</td>`+
+      `<td style="max-width:260px">${o.obs?esc(o.obs):'<span class="vazio-cel">—</span>'}</td>`+
+    "</tr>";
+  });
+  h += '</tbody></table></div>';
+  h += `<div class="paginacao">`+
+    `<button data-pag="ant" ${est.pagina<=1?"disabled":""}>← anterior</button>`+
+    `<span>página ${est.pagina} de ${tot} — ${arr.length} operações</span>`+
+    `<button data-pag="prox" ${est.pagina>=tot?"disabled":""}>próxima →</button></div>`;
+  h += '</div>';
+  return h;
+}
+
+/* ---------- ABA: notas explicativas ---------- */
+function abaNotas(){
+  /* Painel na v2: a planilha ja nasce padronizada (listas suspensas), entao as
+     notas deixaram de falar de grafia e passaram a apontar o que ainda falta
+     preencher — que e o que realmente distorce numero hoje. */
+  const ativas   = OPS.filter(o=>!o.historico);
+  const semValor = ativas.filter(o=>!o.valor);
+  const semFee   = ativas.filter(o=>!o.taxa);
+  const semStatus= ativas.filter(o=>!o.status);
+  const aprov    = ativas.filter(o=>o.status==="APROVADO");
+  const semFecha = aprov.filter(o=>!o.dataFechamento);
+  const reprov   = ativas.filter(o=>o.status==="REPROVADO");
+  const hist     = OPS.filter(o=>o.historico);
+
+  /* gerentes cujas operacoes estao TODAS sem valor: aparecem zerados sem ser culpa deles */
+  const porGer = {};
+  ativas.forEach(o=>{ (porGer[o.gerente] = porGer[o.gerente] || {t:0,sv:0}); porGer[o.gerente].t++; if(!o.valor) porGer[o.gerente].sv++; });
+  const zerados = Object.entries(porGer).filter(([,c])=>c.t>0 && c.sv===c.t).map(([g,c])=>`${g} (${c.t})`);
+  const pctSemValor = ativas.length ? Math.round(semValor.length*100/ativas.length) : 0;
+
+  let h = '<div class="nota info"><h3>Como ler este painel <span class="selo">comece aqui</span></h3>'+
+    '<p><b>Cada linha da planilha é uma operação, e todas contam.</b> Se o mesmo cliente aparece em três instituições com o mesmo valor, são três operações — foi a regra definida com a diretoria, porque cada uma é uma captação real.</p>'+
+    `<p>Hoje o painel mostra <b>${ativas.length} operações ativas</b>. Somar a coluna VALOR da planilha `+
+    'dá exatamente o mesmo número que aparece aqui: não há desconto nem agrupamento no meio do caminho.</p>'+
+    '<p>Fora dessa conta ficam apenas as linhas do <b>histórico</b> — veja abaixo o que entra lá.</p></div>';
+
+  if(semValor.length){
+    h += `<div class="nota"><h3>${semValor.length} operações sem valor preenchido <span class="selo">atenção</span></h3>`+
+      `<p>São <b>${pctSemValor}% das operações ativas</b>. Elas têm cliente e status, mas o campo <b>VALOR</b> está vazio — `+
+      'então <b>não entram em nenhum total</b>: nem volume, nem receita, nem funil por valor.</p>';
+    if(zerados.length){
+      h += '<p>Estes gerentes estão com <b>todas</b> as operações nessa situação, e por isso aparecem zerados no painel:<br>'+
+           `<b>${zerados.map(esc).join(" · ")}</b></p>`+
+           '<p>Não é que não produziram — é campo em branco. Preenchendo o valor na aba do gerente, eles aparecem na próxima atualização.</p>';
+    }
+    h += '</div>';
+  }
+
+  if(semFee.length){
+    h += `<div class="nota"><h3>${semFee.length} operações sem fee <span class="selo">limitação de dados</span></h3>`+
+      '<p>Entram no <b>volume</b> normalmente, mas ficam fora da <b>receita</b>: sem a alíquota não há como calcular quanto a PJC ganha.</p>'+
+      '<p>Na v2 a receita é fórmula (<code>Valor × Fee</code>), então basta preencher o fee na aba do gerente que o número aparece sozinho — aqui e na aba METAS.</p></div>';
+  }
+
+  h += '<div class="nota"><h3>Data de fechamento: o campo que faz a meta funcionar <span class="selo">importante</span></h3>'+
+    '<p>A coluna <b>ATUALIZAÇÃO</b> registra a última mexida na linha, não quando o negócio fechou. Usá-la para receita mensal jogaria o dinheiro no mês errado.</p>'+
+    '<p>Por isso existe a coluna <b>DATA FECHAMENTO</b>: preencha-a ao marcar o status como <b>Aprovado</b>. É ela que alimenta o realizado da aba METAS.</p>';
+  if(semFecha.length){
+    h += `<p><b>${semFecha.length} operação(ões) aprovada(s) estão sem essa data</b> — a receita delas não entra em mês nenhum. `+
+         'A coluna "Aprovado sem data" da aba METAS mostra o valor que está ficando de fora.</p>';
+  }
+  h += '<p>As datas das operações já aprovadas foram <b>copiadas da coluna Atualização</b> na migração da v1, que não tinha esse campo. Vale conferir — são poucas linhas e é o que faz o mês bater.</p></div>';
+
+  h += `<div class="nota"><h3>O que entra no histórico <span class="selo">decisão</span></h3>`+
+    `<p>A aba <b>HISTÓRICO</b> da planilha reúne ${hist.length} linhas de duas origens: as das abas antigas <b>KAIO1</b> e <b>PABLO</b>, e os <b>reprovados</b> de todos os gerentes.</p>`+
+    `<p>Uma diferença importante: os <b>${reprov.length} reprovados do ciclo atual continuam contando</b> na taxa de aprovação — `+
+    'senão ela mostraria 100%, já que só os aprovados teriam sobrado. Só as linhas das abas antigas ficam de fora dos KPIs.</p>'+
+    '<p>Para ver as antigas, marque <b>"Incluir histórico"</b> na barra de filtros; elas aparecem com o selo <span class="hist-mark">hist</span>.</p></div>';
+
+  if(semStatus.length){
+    h += `<div class="nota"><h3>${semStatus.length} operações sem status <span class="selo">atenção</span></h3>`+
+      '<p>Entram no volume, mas ficam <b>fora do funil e da taxa de aprovação</b> — sem status não dá para saber em que etapa estão.</p></div>';
+  }
+
+  h += '<div class="nota"><h3>Itens marcados com asterisco <span class="selo">confirmar</span></h3>'+
+    '<p>Na aba <b>PARAMETROS</b> da planilha, alguns parceiros estão no fim da lista com <b>*</b>: '+
+    '<code>FIRMA CAPITAL*</code>, <code>DAVOS FIDC*</code>, <code>RNX FIDIC*</code> e <code>BANCO BCG*</code>. '+
+    'O asterisco significa que o nome ou a existência ainda precisa de confirmação.</p>'+
+    '<p>Confirmado o nome correto, é só apagar o asterisco na aba PARAMETROS — as operações já lançadas continuam válidas.</p></div>';
+
+  h += '<div class="nota ok"><h3>A padronização agora é na origem <span class="selo">v2</span></h3>'+
+    '<p>Na versão anterior o painel precisava adivinhar: <code>RNX</code> e <code>RNX FIDIC</code>, <code>SAPIIENS</code> e <code>SAPIENS CAPITAL</code>, <code>CASH ME</code> e <code>CASHME</code> — eram 33 grafias diferentes para os mesmos parceiros.</p>'+
+    '<p>Na v2 isso acabou: instituição, tipo de operação, status, fluxo, mandato, parceiro indicador e motivo de recusa são <b>listas suspensas</b>. Quem preenche escolhe, não digita. O painel apenas lê.</p>'+
+    '<p>Para incluir um item novo, use a aba <b>PARAMETROS</b> — a lista passa a oferecê-lo em todas as abas na hora.</p></div>';
+
+  h += '<div class="nota info"><h3>Como atualizar <span class="selo">rotina</span></h3>'+
+    '<p>Feche esta aba e dê duplo clique no atalho <b>“BI de Operações PJC”</b>. Ele busca a planilha mais recente do OneDrive, recalcula tudo e reabre o painel — leva alguns segundos e <b>não precisa instalar nada</b>.</p>'+
+    '<p>Os gerentes editam a planilha pelo navegador, então o que você vê aqui é o que estava lá no momento da última atualização. A planilha nunca é modificada por este painel — é aberta só para leitura.</p>'+
+    `<p>Fonte destes dados: <code>${esc(D.arquivoFonte||"")}</code>, lida em <b>${esc((D.geradoEm||"").replace("T"," "))}</b>.</p></div>`;
+
+  return h;
+}
+
+/* ---------- abas ---------- */
+const ABAS = [
+  {id:"geral",  rot:"Visão geral",   fn:abaGeral},
+  {id:"funil",  rot:"Funil",         fn:abaFunil},
+  {id:"ger",    rot:"Gerentes",      fn:abaGerentes},
+  {id:"inst",   rot:"Instituições",  fn:abaInstituicoes},
+  {id:"ops",    rot:"Operações",     fn:abaOperacoes},
+  {id:"notas",  rot:"Notas",         fn:abaNotas, avisos:true}
+];
+
+/* Conta só o que pede ação de alguém — não o total de notas. Assim o número
+   no rótulo cai conforme a planilha vai sendo preenchida. */
+function contarPendencias(){
+  const at = OPS.filter(o=>!o.historico);
+  let n = 0;
+  if(at.some(o=>!o.valor))  n++;   // operação sem valor lançado
+  if(at.some(o=>!o.taxa))   n++;   // sem fee: fica fora da receita
+  if(at.some(o=>!o.status)) n++;   // sem status: fora do funil
+  if(at.some(o=>o.status==="APROVADO" && !o.dataFechamento)) n++;  // meta não conta
+  if(D.instituicoesOficiais && D.instituicoesOficiais.some(i=>i.endsWith("*"))) n++;
+  return n;
+}
+
+function pintarAbas(){
+  const n = contarPendencias();
+  document.getElementById("abas").innerHTML = ABAS.map(a =>
+    `<button role="tab" data-aba="${a.id}" aria-selected="${est.aba===a.id}">${a.rot}`+
+    (a.avisos && n ? `<span class="pino">${n}</span>` : "")+`</button>`).join("");
+}
+
+/* Texto do botão: "Todos", o nome quando é um só, ou a contagem. */
+function rotuloBotao(c){
+  const sel = est[c.id];
+  if(!sel.size) return `<span class="txt todos">Todos</span>`;
+  if(sel.size === 1){
+    const v = [...sel][0];
+    return `<span class="txt">${esc(c.rotular ? c.rotular(v) : v)}</span>`;
+  }
+  return `<span class="txt">${c.rot}</span><span class="cha">${sel.size}</span>`;
+}
+
+function pintarMultiLista(c, filtro){
+  const f = (filtro||"").trim().toLowerCase();
+  const opts = opcoesDe(c).filter(([v]) =>
+    !f || String(c.rotular ? c.rotular(v) : v).toLowerCase().includes(f));
+  if(!opts.length) return '<div class="nada">Nenhuma opção encontrada.</div>';
+  return opts.map(([v,n]) =>
+    `<label><input type="checkbox" value="${esc(v)}"${est[c.id].has(v)?" checked":""}>`+
+    `<span class="nm">${esc(c.rotular ? c.rotular(v) : v)}</span>`+
+    `<span class="cnt">${n}</span></label>`).join("");
+}
+
+function pintarFiltros(){
+  const campos = CAMPOS.map(c =>
+    `<div class="campo"><label>${c.rot}</label>`+
+    `<div class="multi" data-campo="${c.id}">`+
+      `<button type="button" class="multi-btn">${rotuloBotao(c)}<span class="cae">▼</span></button>`+
+      `<div class="multi-pop oculto">`+
+        `<div class="topo">`+
+          `<input type="search" class="multi-busca" placeholder="filtrar ${c.rot.toLowerCase()}…">`+
+          `<div class="acoes"><button type="button" data-acao="todos">Marcar todos</button>`+
+          `<button type="button" data-acao="nenhum">Limpar</button></div>`+
+        `</div>`+
+        `<div class="multi-lista">${pintarMultiLista(c,"")}</div>`+
+      `</div>`+
+    `</div></div>`).join("");
+
+  document.getElementById("filtros").innerHTML =
+    campos +
+    `<div class="campo"><label for="f-busca">Buscar cliente</label>`+
+    `<input id="f-busca" type="search" placeholder="nome do cliente…" value="${esc(est.busca)}"></div>`+
+    `<label class="chk"><input type="checkbox" id="f-hist"${est.historico?" checked":""}>Incluir histórico (KAIO1 e PABLO)</label>`+
+    `<button class="btn-limpar" id="f-limpar">Limpar tudo</button>`+
+    `<div class="contagem"><b id="cont-n">0</b> operações no filtro</div>`+
+    fichasAtivas();
+}
+
+/* Fichas embaixo dos filtros: mostram tudo que está marcado e permitem tirar
+   item a item, sem reabrir a lista. */
+function fichasAtivas(){
+  const fs = [];
+  CAMPOS.forEach(c => est[c.id].forEach(v => fs.push(
+    `<span class="ficha">${c.rot}: <b>${esc(c.rotular ? c.rotular(v) : v)}</b>`+
+    `<button type="button" data-tirar="${c.id}" data-val="${esc(v)}" title="Remover">×</button></span>`)));
+  if(est.busca.trim()) fs.push(
+    `<span class="ficha">Busca: <b>${esc(est.busca.trim())}</b>`+
+    `<button type="button" data-tirar="busca" title="Remover">×</button></span>`);
+  if(est.historico) fs.push(
+    `<span class="ficha">Incluindo <b>histórico</b>`+
+    `<button type="button" data-tirar="historico" title="Remover">×</button></span>`);
+  return fs.length ? `<div class="fichas">${fs.join("")}</div>` : "";
+}
+
+/* Só o conteúdo, sem reconstruir a barra — assim a lista aberta não fecha
+   a cada clique numa caixa. */
+function pintarConteudo(){
+  const ops = filtrar();
+  const c = document.getElementById("cont-n");
+  if(c) c.textContent = ops.length.toLocaleString("pt-BR");
+  const aba = ABAS.find(a=>a.id===est.aba) || ABAS[0];
+  document.getElementById("conteudo").innerHTML = aba.fn(ops);
+  ajustarCabecalho();   // a tabela acabou de ser recriada: remede o topo dos titulos
+  ligarDicasMensal();   // pontos do gráfico mensal recebem o tooltip
+  try{ localStorage.setItem("bi-pjc-aba", est.aba); }catch(e){}
+}
+
+function pintar(){
+  pintarAbas();
+  pintarFiltros();
+  pintarConteudo();
+}
+
+/* A linha de subtotais tem altura variavel (as vezes traz "9 sem valor" numa
+   segunda linha). Fixar o topo dos titulos num valor chutado corta o texto,
+   entao mede-se a altura real depois de renderizar. */
+function ajustarCabecalho(){
+  /* A barra de abas e sticky no topo (z-index alto) e passaria por cima do
+     cabecalho da tabela. Por isso as duas linhas grudam LOGO ABAIXO dela, e
+     nao em 0 — e a altura da barra e medida, nao chutada. */
+  const nav = document.querySelector("nav.abas");
+  const alturaNav = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+
+  document.querySelectorAll(".rolagem.fixa").forEach(caixa => {
+    const sub = caixa.querySelector("thead tr.subtotais");
+    const tit = caixa.querySelector("thead tr.titulos");
+    if(!tit) return;
+    const aplicar = () => {
+      let base = alturaNav;
+      if(sub){
+        const h = Math.round(sub.getBoundingClientRect().height);
+        if(!h) return false;
+        sub.querySelectorAll("th").forEach(th => { th.style.top = base + "px"; });
+        base += h;
+      }
+      tit.querySelectorAll("th").forEach(th => { th.style.top = base + "px"; });
+      return true;
+    };
+    if(!aplicar()) requestAnimationFrame(aplicar);
+  });
+}
+
+/* Atualiza em volta de uma lista aberta, preservando-a. */
+function atualizarEmTorno(campoId){
+  CAMPOS.forEach(c => {
+    const el = document.querySelector(`.multi[data-campo="${c.id}"]`);
+    if(!el) return;
+    el.querySelector(".multi-btn").innerHTML = rotuloBotao(c) + '<span class="cae">▼</span>';
+    if(c.id !== campoId){   // a lista aberta não se redesenha sob o cursor
+      const busca = el.querySelector(".multi-busca");
+      el.querySelector(".multi-lista").innerHTML = pintarMultiLista(c, busca ? busca.value : "");
+    }
+  });
+  const antigas = document.querySelector(".fichas");
+  if(antigas) antigas.remove();
+  document.getElementById("filtros").insertAdjacentHTML("beforeend", fichasAtivas());
+  pintarConteudo();
+}
+
+/* ---------- eventos ---------- */
+function fecharListas(exceto){
+  document.querySelectorAll(".multi").forEach(m => {
+    if(m === exceto) return;
+    m.dataset.aberto = "0";
+    m.querySelector(".multi-pop").classList.add("oculto");
+  });
+}
+
+document.addEventListener("click", e => {
+  if(e.target.closest("#btn-atualizar")){ iniciarAtualizacao(); return; }
+
+  const b = e.target.closest("button[data-aba]");
+  if(b){ est.aba = b.dataset.aba; est.pagina = 1; fecharListas(); pintarAbas(); pintarConteudo(); return; }
+
+  const p = e.target.closest("button[data-pag]");
+  if(p){ est.pagina += (p.dataset.pag==="prox"?1:-1); pintarConteudo(); return; }
+
+  /* --- controles do gráfico mensal --- */
+  const bs = e.target.closest(".gmensal .series button[data-serie]");
+  if(bs){
+    if(bs.dataset.serie === "meta") est.mensalMeta = !est.mensalMeta;
+    else                            est.mensalReal = !est.mensalReal;
+    bs.setAttribute("aria-pressed", bs.dataset.serie === "meta" ? est.mensalMeta : est.mensalReal);
+    redesenharMensal(); return;
+  }
+  /* abre/fecha a lista de gerentes do gráfico */
+  const bg = e.target.closest('.multi[data-campo="mensalGer"] .multi-btn');
+  if(bg){
+    bg.parentElement.querySelector(".multi-pop").classList.toggle("oculto");
+    return;
+  }
+  const cg = e.target.closest('.multi[data-campo="mensalGer"] input[data-ger]');
+  if(cg){
+    /* o clique no checkbox não deve fechar a lista: redesenha só o gráfico */
+    if(cg.checked) est.mensalGer.add(cg.dataset.ger);
+    else           est.mensalGer.delete(cg.dataset.ger);
+    redesenharMensal();   // a lista continua intacta e aberta
+    return;
+  }
+  if(e.target.closest('.multi[data-campo="mensalGer"]')) return;   // clique dentro da lista
+
+  const th = e.target.closest("th[data-ord]");
+  if(th){
+    const k = th.dataset.ord;
+    if(est.ordCol===k) est.ordDir *= -1; else { est.ordCol = k; est.ordDir = -1; }
+    est.pagina = 1; pintarConteudo(); return;
+  }
+
+  /* abrir/fechar uma lista */
+  const btn = e.target.closest(".multi-btn");
+  if(btn){
+    const m = btn.closest(".multi");
+    const abrindo = m.dataset.aberto !== "1";
+    fecharListas(m);
+    m.dataset.aberto = abrindo ? "1" : "0";
+    m.querySelector(".multi-pop").classList.toggle("oculto", !abrindo);
+    if(abrindo){
+      const bu = m.querySelector(".multi-busca");
+      bu.value = "";
+      const c = CAMPOS.find(x=>x.id===m.dataset.campo);
+      m.querySelector(".multi-lista").innerHTML = pintarMultiLista(c,"");
+      bu.focus();
+    }
+    return;
+  }
+
+  /* marcar todos / limpar dentro de uma lista */
+  const acao = e.target.closest("button[data-acao]");
+  if(acao){
+    const m = acao.closest(".multi");
+    const c = CAMPOS.find(x=>x.id===m.dataset.campo);
+    const bu = m.querySelector(".multi-busca");
+    if(acao.dataset.acao === "nenhum"){
+      est[c.id].clear();
+    } else {
+      const f = (bu.value||"").trim().toLowerCase();
+      opcoesDe(c).forEach(([v]) => {
+        if(!f || String(c.rotular?c.rotular(v):v).toLowerCase().includes(f)) est[c.id].add(v);
+      });
+    }
+    est.pagina = 1;
+    m.querySelector(".multi-lista").innerHTML = pintarMultiLista(c, bu.value);
+    atualizarEmTorno(c.id);
+    return;
+  }
+
+  /* tirar uma ficha */
+  const ficha = e.target.closest("button[data-tirar]");
+  if(ficha){
+    const alvo = ficha.dataset.tirar;
+    if(alvo === "busca"){ est.busca = ""; }
+    else if(alvo === "historico"){ est.historico = false; }
+    else { est[alvo].delete(ficha.dataset.val); }
+    est.pagina = 1;
+    pintar();
+    return;
+  }
+
+  if(e.target.id === "f-limpar"){
+    CAMPOS.forEach(c => est[c.id].clear());
+    est.busca = ""; est.historico = false; est.pagina = 1;
+    pintar(); return;
+  }
+
+  if(!e.target.closest(".multi-pop")) fecharListas();
+});
+
+document.addEventListener("change", e => {
+  /* caixa de uma opção */
+  const cx = e.target.closest(".multi-lista input[type=checkbox]");
+  if(cx){
+    const m = cx.closest(".multi");
+    const c = CAMPOS.find(x=>x.id===m.dataset.campo);
+    if(cx.checked) est[c.id].add(cx.value); else est[c.id].delete(cx.value);
+    est.pagina = 1;
+    atualizarEmTorno(c.id);
+    return;
+  }
+  if(e.target.id === "f-hist"){
+    est.historico = e.target.checked;
+    est.pagina = 1;
+    pintar();
+  }
+});
+
+let deb, debL;
+document.addEventListener("input", e => {
+  /* busca dentro de uma lista */
+  const bl = e.target.closest(".multi-busca");
+  if(bl){
+    clearTimeout(debL);
+    const m = bl.closest(".multi");
+    const c = CAMPOS.find(x=>x.id===m.dataset.campo);
+    debL = setTimeout(() => {
+      m.querySelector(".multi-lista").innerHTML = pintarMultiLista(c, bl.value);
+    }, 120);
+    return;
+  }
+  if(e.target.id !== "f-busca") return;
+  clearTimeout(deb);
+  const v = e.target.value;
+  deb = setTimeout(() => {
+    est.busca = v; est.pagina = 1;
+    atualizarEmTorno(null);
+    const c = document.getElementById("f-busca");
+    if(c){ c.focus(); c.setSelectionRange(c.value.length, c.value.length); }
+  }, 260);
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape") fecharListas();
+});
+
+/* ---------- atualização (botão) ---------- */
+let esAtu = null;   // conexão de eventos em andamento
+
+const elModal   = document.getElementById("modal-atu");
+const elBtn     = document.getElementById("btn-atualizar");
+
+function iniciarAtualizacao(){
+  /* Sem servidor local (aberto por file://) o navegador não deixa rodar
+     scripts. Explico e ofereço a alternativa. */
+  /* Aberto por file:// (modo sem servidor, usado pelos diretores): o navegador
+     não deixa a página rodar programa nenhum. A atualização acontece no
+     próprio atalho, então é só isso que precisa ser explicado. */
+  if(location.protocol === "file:"){
+    const D = window.DADOS_BI || {};
+    const quando = (D.geradoEm||"").slice(0,16).replace("T"," ");
+    modalAviso(
+      "Para atualizar, feche e abra pelo atalho",
+      'Estes dados são de <b>'+ (quando || "—") +'</b>.'+
+      '<div style="margin:14px 0">Feche esta aba e dê duplo clique em '+
+      '<b>“BI de Operações PJC”</b>. Ele busca a planilha mais recente, '+
+      'recalcula tudo e reabre o painel já atualizado.</div>'+
+      '<div class="aviso-atu">Leva alguns segundos. Não precisa instalar nada.</div>');
+    return;
+  }
+
+  abrirModal();
+  resetProgresso();
+  elBtn.classList.add("girando");
+  elBtn.disabled = true;
+
+  /* Confere se o servidor está vivo ANTES de começar, para dar um aviso claro
+     e imediato caso ele tenha caído (ex.: painel aberto do cache do navegador). */
+  fetch("/ping", {cache:"no-store"})
+    .then(r => { if(!r.ok) throw new Error("sem servidor"); conectarAtualizacao(); })
+    .catch(() => {
+      mostrarErro("O servidor local não respondeu. Feche esta aba e abra o painel de novo "+
+                  "pelo atalho “BI de Operações PJC” — ele sobe o servidor sozinho.");
+    });
+}
+
+function conectarAtualizacao(){
+  esAtu = new EventSource("/atualizar");
+  esAtu.onmessage = ev => {
+    let d; try{ d = JSON.parse(ev.data); }catch(_){ return; }
+    aplicarProgresso(d);
+    if(d.pct >= 100){
+      encerrarES();
+      marcarBotaoPronto();
+      setTimeout(() => location.reload(), 1400);
+    } else if(d.pct < 0){
+      encerrarES();
+      mostrarErro(d.msg);
+    }
+  };
+  esAtu.onerror = () => {
+    encerrarES();
+    mostrarErro("A conexão com o servidor caiu no meio da atualização. Feche esta aba e "+
+                "abra o painel de novo pelo atalho “BI de Operações PJC”, depois tente outra vez.");
+  };
+}
+
+function encerrarES(){
+  if(esAtu){ esAtu.close(); esAtu = null; }
+  elBtn.classList.remove("girando");
+  elBtn.disabled = false;
+}
+
+function abrirModal(){ elModal.classList.remove("oculto"); }
+function fecharModal(){
+  if(esAtu){   // atualização ainda rodando: só esconde, sem interromper
+    elModal.classList.add("oculto");
+    return;
+  }
+  elModal.classList.add("oculto");
+}
+
+function resetProgresso(){
+  document.getElementById("titulo-atu").textContent = "Atualizando o BI";
+  document.getElementById("corpo-atu").style.display = "";
+  document.getElementById("pct-atu").textContent = "0%";
+  const p = document.getElementById("preench-atu");
+  p.style.width = "0%"; p.className = "preench-atu";
+  const m = document.getElementById("msg-atu");
+  m.textContent = "Preparando…"; m.className = "msg-atu";
+  document.getElementById("log-atu").innerHTML = "";
+  document.querySelectorAll(".etapa-atu").forEach(e => e.removeAttribute("data-e"));
+  document.getElementById("acoes-atu").innerHTML =
+    `<button id="ocultar-atu">Continuar usando o painel</button>`;
+}
+
+function aplicarProgresso(d){
+  const pct = Math.max(0, Math.min(100, d.pct));
+  document.getElementById("pct-atu").textContent = pct + "%";
+  document.getElementById("preench-atu").style.width = pct + "%";
+  const m = document.getElementById("msg-atu");
+  m.textContent = d.msg || ""; m.className = "msg-atu";
+  logAtu(d.msg);
+
+  /* etapas: download (1) e bi (2) */
+  const e1 = document.querySelector('.etapa-atu[data-etapa="download"]');
+  const e2 = document.querySelector('.etapa-atu[data-etapa="bi"]');
+  if(d.etapa === "download"){ e1.dataset.e = "ativa"; }
+  if(pct >= 50){ e1.dataset.e = "feita"; }
+  if(d.etapa === "bi"){ e2.dataset.e = "ativa"; }
+  if(d.etapa === "fim" || pct >= 100){ e1.dataset.e = "feita"; e2.dataset.e = "feita"; }
+}
+
+function logAtu(msg){
+  if(!msg) return;
+  const log = document.getElementById("log-atu");
+  const linha = document.createElement("div");
+  linha.textContent = "› " + msg;
+  log.appendChild(linha);
+  log.scrollTop = log.scrollHeight;
+}
+
+function marcarBotaoPronto(){
+  document.getElementById("preench-atu").classList.add("ok");
+  const m = document.getElementById("msg-atu");
+  m.textContent = "Concluído! Recarregando o painel…";
+  document.getElementById("acoes-atu").innerHTML = "";
+}
+
+function mostrarErro(msg){
+  const p = document.getElementById("preench-atu");
+  p.classList.add("erro");
+  const m = document.getElementById("msg-atu");
+  m.textContent = msg; m.className = "msg-atu erro";
+  logAtu(msg);
+  document.getElementById("acoes-atu").innerHTML =
+    `<button id="fechar-atu">Fechar</button>`;
+}
+
+function modalAviso(titulo, corpoHtml){
+  abrirModal();
+  document.getElementById("titulo-atu").textContent = titulo;
+  document.getElementById("corpo-atu").style.display = "none";
+  document.getElementById("corpo-atu").insertAdjacentHTML("afterend",
+    `<div class="aviso-atu" id="aviso-tmp">${corpoHtml}</div>`);
+  document.getElementById("acoes-atu").innerHTML =
+    `<button id="fechar-atu" class="primario">Entendi</button>`;
+}
+
+/* fechamentos do modal */
+document.addEventListener("click", e => {
+  if(e.target.closest("#fechar-atu") || e.target.closest("#ocultar-atu")){
+    const tmp = document.getElementById("aviso-tmp");
+    if(tmp) tmp.remove();
+    fecharModal();
+    return;
+  }
+  if(e.target === elModal && !esAtu){ fecharModal(); }
+});
+
+/* ---------- início ---------- */
+(function(){
+  const datas = OPS.map(o=>o.data).filter(Boolean).sort();
+  document.getElementById("carimbo-data").textContent =
+    (D.geradoEm||"").slice(0,10).split("-").reverse().join("/");
+  document.getElementById("carimbo-linhas").textContent =
+    `${OPS.length} operações · ${new Set(OPS.map(o=>o.gerente)).size} gerentes` +
+    (datas.length ? ` · última mexida ${fmtData(datas[datas.length-1])}` : "");
+  try{ const a = localStorage.getItem("bi-pjc-aba"); if(a && ABAS.some(x=>x.id===a)) est.aba = a; }catch(e){}
+  pintar();
+  /* Mudar a largura da janela pode quebrar o texto do subtotal em mais linhas
+     e mudar a altura dele — remede antes que os titulos fiquem cortados. */
+  window.addEventListener("resize", ajustarCabecalho);
+})();
+
+})();
+</script>
+</body>
+</html>

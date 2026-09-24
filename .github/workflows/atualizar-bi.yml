@@ -1,0 +1,50 @@
+name: Atualizar BI PJC
+
+on:
+  schedule:
+    # 06:00 em Brasilia (09:00 UTC)
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-bi-pjc
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Baixar planilha mais recente do OneDrive
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\automation\Baixar-Planilha.ps1"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Gerar dados do BI
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\automation\Gerar-BI.ps1" `
+            -Planilha ".\automation\RELACAO DE OPERACAO - PJC v3.xlsx" `
+            -Saida ".\private\dados_bi.js"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publicar nova versao dos dados no repositorio
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add private/dados_bi.js
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Nenhuma alteracao nos dados."
+            exit 0
+          }
+          git commit -m "chore: atualizar BI PJC"
+          git push
